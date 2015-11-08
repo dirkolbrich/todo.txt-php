@@ -1,0 +1,15 @@
+a short simple task
+x 2015-05-26 a simple completed task
+2015-05-28 a short task with a creation date
+(A) a task with a priority
+(B) another task with a another @priority
+(C) a task with another yet lesser @priority
+a task with a @context
+a task with a @context and @anotherContext
+a task with a +project
+a task with +anotherProject
+a task with a +project and other +multipleProjects
+a task with a due date due:2016-06-30
+a task with an overdue due date due:2015-01-01
+(A) 2015-05-15 a task with a +project and a @context an a due date due:2016-06-15
+x 2015-05-20 2015-04-20 a completed task with a creation date a +project and a @context and a due:2015-05-25 date
