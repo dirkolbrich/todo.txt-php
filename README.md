@@ -1,8 +1,7 @@
 # todo.txt-php
+[![Build Status](https://travis-ci.org/dirkolbrich/todo.txt-php.svg)](https://travis-ci.org/dirkolbrich/todo.txt-php)
 
-
-todo.txt-php is a PHP library to access todo.txt files, validate them
-and handle saving them to file.
+todo.txt-php is a PHP package to access, handle validte the content of todo.txt files. 
 
 ## Scope
 
@@ -14,12 +13,11 @@ result in exceptions.
 
 The following features are roadmapped:
 
-*   Task manipulation via a model.
 *   Parsing a task into a model from a text string.
 *   Full unit-testing.
 *   Ability to sort and filter the tasks.
 
-File loading or writing is not included, there are a lot of packages, which handle this way better
+File loading or writing is not included, there are a lot of other packages, which handle this way better.
 
 ## Quickstart
 
