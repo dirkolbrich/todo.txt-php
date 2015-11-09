@@ -12,7 +12,7 @@ class Context
     /**
      * @var string
      */
-    protected $name;
+    public $context;
 
     /**
      * Create a new project from a raw line held in a todo.txt file.
@@ -25,14 +25,6 @@ class Context
         if (strlen($context) == 0) {
             throw new EmptyStringException;
         }
-        $this->name = $context;
-    }
-
-    /**
-     * @return string $name
-     */
-    public function get()
-    {
-        return $this->name;
+        $this->context = $context;
     }
 }

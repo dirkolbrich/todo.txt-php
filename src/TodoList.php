@@ -35,14 +35,18 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     protected $position = 0;
 
     /**
+     * Array of Porjects in tasks
+     *
      * @var array
      */
-    public $projectsList = array();
+    protected $projectsList = array();
 
     /**
+     * Array of Contexts in $tasks
+     *
      * @var array
      */
-    public $contextsList = array();
+    protected $contextsList = array();
 
     /**
      * @param mixed $tasks
@@ -78,6 +82,15 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
             $task = new Task((string) $task);
         }
         $this->tasks[] = $task;
+
+        if ($task->isCompleted()) {
+            $this->done[] = $task;
+        } else {
+            $this->todo[] = $task;
+        }
+
+        $this->addProject($task);
+        $this->addContext($task);
     }
     
     /**
@@ -125,7 +138,18 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     {
         return $this->tasks;
     }
-    
+
+    /**
+     * @param integer $position
+     */
+    public function deleteTask($position)
+    {
+        // validate existinence of task
+        // delete Task
+        // remove projects and contexts if not used by other tasks
+        // remove from $tasks, $todo or $done list
+    }
+
     /**
      * @param Task $task
      */
@@ -149,6 +173,97 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
             }
         }
     }
+
+    /**
+     * sort todolist with standard sorting method
+     */
+    public function sort()
+    {
+        // sort standard
+    }
+
+    /**
+     * @param string $priority
+     */
+    public function sortByPriority($priority = null)
+    {
+        // sort by $priority, case in-sensitive
+    }
+
+    /**
+     * @param string $project
+     */
+    public function sortByProject($project = null)
+    {
+        // sort by project, standard alphabetical or via specific project
+    }
+
+    /**
+     * @param string $context
+     */
+    public function sortByContext($context = null)
+    {
+
+    }
+
+    /**
+     * @param string $metadata
+     */
+    public function sortByMetaData($metadata = null)
+    {
+
+    }
+
+    /**
+     * get only open tasks
+     *
+     *@return array $todo
+     */
+    public function getTodo()
+    {
+        return $this->todo;
+    }
+    /**
+     * get done tasks, helpful to write these to a done.txt file
+     *
+     * @return array $done
+     */
+    public function getDone()
+    {
+        return $this->done;
+    }
+
+    /**
+     * clear $todos and archive done tasks to $done
+     */
+    public function archive()
+    {
+        // move completed tasks to $done
+        // remove completed tasks from $tasks
+    }
+
+    /**
+     * @param integer $position
+     */
+    public function completeTask($position = null)
+    {
+        // validate existinence of task
+        // validate isComplete
+        // complete Task
+        // move to $done list, remove from $todo list
+    }
+
+    /**
+     * @param integer $position
+     */
+    public function uncompleteTask($position = null)
+    {
+        // validate existinence of task
+        // validate isComplete
+        // uncomplete Task
+        // move to $todo list, remove from $done list
+    }
+
     /**
      * @return string
      */
@@ -161,7 +276,8 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         
         return trim($file);
     }
-    
+
+    // implement \ArrayAccess Interface
     /**
      * checks if a task at the specified line number exists
      *
@@ -198,27 +314,22 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     {
         unset($this->tasks[$offset]);
     }
-    
+
+    // implement \Countable Interface
     /**
-     * @return string
-     */
-    public function serialize()
-    {
-        return serialize($this->tasks);
-    }
-    
-    /**
-     * unserialize the $tasks array
+     * count all tasks
      *
-     * @param array $tasks
-     * @return void
+     * @return integer
      */
-    public function unserialize($tasks)
+    public function count()
     {
-        $this->tasks = unserialize($tasks);
+        return count($this->tasks);
     }
-    
+
+    // implement \SeekableIterator Interface
     /**
+     * set $position to specific task
+     *
      * @param integer $position
      */
     public function seek($position)
@@ -250,7 +361,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     }
     
     /**
-     * forwar $position by 1
+     * forward $position by 1
      *
      * @return void
      */
@@ -279,13 +390,23 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         return isset($this->tasks[$this->position]);
     }
     
+    // implement \Serializable Interface
     /**
-     * count all tasks
-     *
-     * @return integer
+     * @return string
      */
-    public function count()
+    public function serialize()
     {
-        return count($this->tasks);
+        return serialize($this->tasks);
+    }
+    
+    /**
+     * unserialize the $tasks array
+     *
+     * @param array $tasks
+     * @return void
+     */
+    public function unserialize($tasks)
+    {
+        $this->tasks = unserialize($tasks);
     }
 }

@@ -233,6 +233,25 @@ class Task
     }
     
     /**
+     * set task to complete
+     */
+    public function complete()
+    {
+        $this->complete = true;
+        // set completionDate
+        // parse new $rawTask string
+    }
+
+    /**
+     * set task to uncomplete
+     */
+    public function uncomplete()
+    {
+        $this->complete = false;
+        // remove completionDate from $rawTask string
+    }
+
+    /**
      * @return \DateTime|null
      */
     public function getCreationDate()

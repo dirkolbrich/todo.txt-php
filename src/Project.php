@@ -12,12 +12,12 @@ class Project
     /**
      * @var string
      */
-    protected $name;
+    public $project;
 
     /**
      * Create a new project from a raw line held in a todo.txt file.
      * @param string $project A raw task line
-     * @throws EmptyString When $project is an empty string (or whitespace)
+     * @throws EmptyStringException When $project is an empty string (or whitespace)
      */
     public function __construct($project)
     {
@@ -25,14 +25,6 @@ class Project
         if (strlen($project) == 0) {
             throw new EmptyStringException;
         }
-        $this->name = $project;
-    }
-
-    /**
-     * @return string $name
-     */
-    public function get()
-    {
-        return $this->name;
+        $this->project = $project;
     }
 }

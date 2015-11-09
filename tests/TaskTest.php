@@ -152,15 +152,15 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         $task = new Task("Update @todotxt.net");
         $this->assertCount(1, $task->contexts);        
-        $this->assertTrue("todotxt.net" == $task->contexts[0]->get());
+        $this->assertTrue("todotxt.net" == $task->contexts[0]->context);
     }
     
     public function testValidContexts()
     {
         $task = new Task("Update @todotxt.net @github");
         $this->assertCount(2, $task->contexts);
-        $this->assertTrue("todotxt.net" == $task->contexts[0]->get());
-        $this->assertTrue("github" == $task->contexts[1]->get());
+        $this->assertTrue("todotxt.net" == $task->contexts[0]->context);
+        $this->assertTrue("github" == $task->contexts[1]->context);
     }
     
     public function testInvalidContext()
@@ -172,15 +172,15 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     public function testValidProject() {
         $task = new Task("Push to +todo.txt-web");
         $this->assertCount(1, $task->projects);
-        $this->assertTrue("todo.txt-web" == $task->projects[0]->get());
+        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
     }
     
     public function testValidProjects()
     {
         $task = new Task("Push to +todo.txt-web +open-source");
         $this->assertCount(2, $task->projects);
-        $this->assertTrue("todo.txt-web" == $task->projects[0]->get());
-        $this->assertTrue("open-source" == $task->projects[1]->get());
+        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
+        $this->assertTrue("open-source" == $task->projects[1]->project);
     }
     
     public function testInvalidProject()
@@ -255,8 +255,8 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($task->getCompletionDate()->format("Y-m-d"), "2011-09-11");
         $this->assertEquals($task->getPriority(), "A");
         $this->assertEquals($task->getCreationDate()->format("Y-m-d"), "2011-09-08");
-        $this->assertTrue("todo.txt-web" == $task->projects[0]->get());
-        $this->assertTrue("github" == $task->contexts[0]->get());
+        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
+        $this->assertTrue("github" == $task->contexts[0]->context);
         $this->assertTrue(isset($task->due));
         $this->assertEquals($task->due, "2011-09-12"); // @todo: plugins
     }
