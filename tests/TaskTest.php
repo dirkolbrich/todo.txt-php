@@ -22,7 +22,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals((string) $task, "This is  a task");
     }
     
-    public function testEmpty()
+    public function testEmptyTask()
     {
         // Empty string and purely whitespace
         $this->setExpectedException('TodoTxt\Exceptions\EmptyStringException');
@@ -149,6 +149,27 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $task = new Task("(a) Important task");
         $this->assertNull($task->getPriority());
     }
+
+    public function testValidProject() {
+        $task = new Task("Push to +todo.txt-web");
+        $this->assertInstanceOf("TodoTxt\Project", $task->projects[0]);
+        $this->assertCount(1, $task->projects);
+        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
+    }
+    
+    public function testValidProjects()
+    {
+        $task = new Task("Push to +todo.txt-web +open-source");
+        $this->assertCount(2, $task->projects);
+        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
+        $this->assertTrue("open-source" == $task->projects[1]->project);
+    }
+    
+    public function testInvalidProject()
+    {
+        $task = new Task("Update +todo* today.");
+        $this->assertTrue(count($task->projects) == 0);
+    }
     
     public function testValidContext()
     {
@@ -171,27 +192,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $task = new Task("Update @todo* today.");
         $this->assertTrue(count($task->contexts) == 0);
     }
-    
-    public function testValidProject() {
-        $task = new Task("Push to +todo.txt-web");
-        $this->assertInstanceOf("TodoTxt\Project", $task->projects[0]);
-        $this->assertCount(1, $task->projects);
-        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
-    }
-    
-    public function testValidProjects()
-    {
-        $task = new Task("Push to +todo.txt-web +open-source");
-        $this->assertCount(2, $task->projects);
-        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
-        $this->assertTrue("open-source" == $task->projects[1]->project);
-    }
-    
-    public function testInvalidProject()
-    {
-        $task = new Task("Update +todo* today.");
-        $this->assertTrue(count($task->projects) == 0);
-    }
+
     
     public function testValidMetadata()
     {

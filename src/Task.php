@@ -18,7 +18,7 @@ class Task
      *
      * @var string
      */
-    protected $rawTask;
+    protected $raw;
     
     /**
      * The task, sans priority, completion marker/date
@@ -26,23 +26,8 @@ class Task
      * @var string
      */
     protected $task;
-    
-    /**
-     * @var bool
-     */
-    protected $complete = false;
-
-    /**
-     * @var bool
-     */
-    protected $due = false;
-
-    /**
-     * @var \DateTime
-     */
-    protected $completionDate;
-
-    /**
+  
+      /**
      * The date the task was created
      *
      * @var \DateTime
@@ -50,7 +35,25 @@ class Task
     protected $creationDate;
 
     /**
-     * The date the task was created
+     * @var bool
+     */
+    protected $complete = false;
+
+    /**
+     *
+     * The date the task is completed
+     *
+     * @var \DateTime
+     */
+    protected $completionDate;
+
+    /**
+     * @var bool
+     */
+    protected $due = false;
+
+    /**
+     * The date the task is due
      *
      * @var \DateTime
      */
@@ -88,16 +91,26 @@ class Task
 
     /**
      * Create a new task from a raw line held in a todo.txt file.
-     * @param string $task A raw task line
+     * @param string $string A raw task line
      * @throws \EmptyStringException When $task is an empty string (or whitespace)
      */
-    public function __construct($task)
+    public function __construct($string)
     {
-        $task = trim($task);
+        $task = trim($string);
         if (strlen($task) == 0) {
             throw new EmptyStringException;
         }
-        $this->rawTask = $task;
+        $this->parseTask($task);
+    }
+
+    /**
+     * Parse the raw task string into its components
+     *
+     * @param string $task
+     */
+    protected function parseTask($task)
+    {
+        $this->raw = $task;
         
         // Since each of these parts can occur sequentially and only at
         // the start of the string, pass the remainder of the task on.
@@ -107,10 +120,145 @@ class Task
         $this->task = $result;
         
         // Find metadata held in the rest of the task
-        $this->findContexts($result);
-        $this->findProjects($result);
+        $this->findProject($result);
+        $this->findContext($result);
         $this->findMetadata($result);
         $this->findDue($result);
+    }
+
+    /**
+     * Looks for a "x " marker, followed by a date.
+     *
+     * Complete tasks start with an X (case-insensitive), followed by a
+     * space. The date of completion follows this (required).
+     * Dates are formatted like YYYY-MM-DD.
+     *
+     * @param string $input String to check for completion.
+     * @return string Returns the rest of the task, without this part.
+     */
+    protected function findCompleted($input)
+    {
+        // Match a lower or uppercase X, followed by a space and a
+        // YYYY-MM-DD formatted date, followed by another space.
+        // Invalid dates can be caught but checked after.
+        $pattern = "/^(X|x) (\d{4}-\d{2}-\d{2}) /";
+
+        if (preg_match($pattern, $input, $matches) == 1) {
+            // Rather than throwing exceptions around, silently bypass this
+            try {
+                $this->completionDate = new \DateTime($matches[2]);
+            } catch (\Exception $e) {
+                return $input;
+            }
+            
+            $this->complete = true;
+            return substr($input, strlen($matches[0]));
+        }
+        return $input;
+    }
+ 
+     /**
+     * Find a creation date (after a priority marker).
+     * @param string $input Input string to check.
+     * @return string Returns the rest of the task, without this part.
+     */
+    protected function findCreated($input)
+    {
+        // Match a YYYY-MM-DD formatted date, followed by a space.
+        // Invalid dates can be caught but checked after.
+        $pattern = "/^(\d{4}-\d{2}-\d{2}) /";
+        if (preg_match($pattern, $input, $matches) == 1) {
+            // Rather than throwing exceptions around, silently bypass this
+            try {
+                $this->creationDate = new \DateTime($matches[1]);
+            } catch (\Exception $e) {
+                return $input;
+            }
+            return substr($input, strlen($matches[0]));
+        }
+        return $input;
+    }
+
+    /**
+     * Find a priority marker.
+     * Priorities are signified by an uppercase letter in parentheses.
+     *
+     * @param string $input Input string to check.
+     * @return string Returns the rest of the task, without this part.
+     */
+    protected function findPriority($input)
+    {
+        // Match one uppercase letter in brackers, followed by a space.
+        $pattern = "/^\(([A-Z])\) /";
+        if (preg_match($pattern, $input, $matches) == 1) {
+            $this->priority = $matches[1];
+            return substr($input, strlen($matches[0]));
+        }
+        return $input;
+    }
+    
+    /**
+     * Find @contexts within the task
+     *
+     * @param string $input Input string to check
+     */
+    protected function findContext($input)
+    {
+        // Match an at-sign, any non-whitespace character, ending with
+        // an alphanumeric or underscore, followed either by the end of
+        // the string or by whitespace.
+        $pattern = "/@(\S+\w)(?=\s|$)/";
+        if (preg_match_all($pattern, $input, $matches) > 0) {
+            $this->addContext($matches[1]);
+        }
+    }
+    
+    /**
+     * Find +projects within the task
+     * @param string $input Input string to check
+     */
+    protected function findProject($input)
+    {
+        // The same rules as contexts, except projects use a plus.
+        $pattern = "/\+(\S+\w)(?=\s|$)/";
+        if (preg_match_all($pattern, $input, $matches) > 0) {
+            $this->addProject($matches[1]);
+        }
+    }
+
+    /**
+     * Find a due date within the metadata.
+     * @return void
+     */
+    protected function findDue()
+    {
+        foreach ($this->metadata as $meta) {
+            if ($meta->key == 'due') {
+                $this->due = true;
+                $this->dueDate = new \DateTime($meta->value);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Metadata can be held in the string in the format key:value.
+     * This is usually used by add-ons, which provide their own
+     * formatting rules for tasks.
+     * This data can be accessed using __get() and __isset().
+     *
+     * @param string $input Input string to check
+     * @see __get
+     * @see __set
+     */
+    protected function findMetadata($input)
+    {
+        // Match a word (alphanumeric+underscores), a colon, followed by
+        // any non-whitespace character.
+        $pattern = "/(?<=\s|^)(\w+):(\S+)(?=\s|$)/";
+        if (preg_match_all($pattern, $input, $matches, PREG_SET_ORDER) > 0) {
+            $this->addMetadata($matches);
+        }
     }
     
     /**
@@ -234,11 +382,30 @@ class Task
     }
 
     /**
-     * @return bool
+     * @return \DateTime|null
      */
-    public function isDue()
+    public function getCompletionDate()
     {
-        return $this->due;
+        return $this->isComplete() && isset($this->completionDate) ? $this->completionDate : null;
+    }
+
+    /**
+     * set task to complete
+     */
+    public function complete()
+    {
+        $this->complete = true;
+        $this->completionDate = new \DateTime("now");
+        $this->raw = $this->rebuildRawTaskString();
+    }
+
+    /**
+     * set task to uncomplete
+     */
+    public function uncomplete()
+    {
+        $this->complete = false;
+        $this->raw = $this->rebuildRawTaskString();
     }
     
     /**
@@ -251,11 +418,11 @@ class Task
     
 
     /**
-     * @return \DateTime|null
+     * @return bool
      */
-    public function getCompletionDate()
+    public function isDue()
     {
-        return $this->isComplete() && isset($this->completionDate) ? $this->completionDate : null;
+        return $this->due;
     }
     
     /**
@@ -264,25 +431,6 @@ class Task
     public function getDueDate()
     {
         return $this->isDue() && isset($this->dueDate) ? $this->dueDate : null;
-    }
-
-    /**
-     * set task to complete
-     */
-    public function complete()
-    {
-        $this->complete = true;
-        $this->completionDate = new \DateTime("now");
-        $this->rawTask = $this->rebuildRawTaskString();
-    }
-
-    /**
-     * set task to uncomplete
-     */
-    public function uncomplete()
-    {
-        $this->complete = false;
-        $this->rawTask = $this->rebuildRawTaskString();
     }
 
     /**
@@ -303,139 +451,9 @@ class Task
         return $this->priority;
     }
     
-    /**
-     * Looks for a "x " marker, followed by a date.
-     *
-     * Complete tasks start with an X (case-insensitive), followed by a
-     * space. The date of completion follows this (required).
-     * Dates are formatted like YYYY-MM-DD.
-     *
-     * @param string $input String to check for completion.
-     * @return string Returns the rest of the task, without this part.
-     */
-    protected function findCompleted($input)
-    {
-        // Match a lower or uppercase X, followed by a space and a
-        // YYYY-MM-DD formatted date, followed by another space.
-        // Invalid dates can be caught but checked after.
-        $pattern = "/^(X|x) (\d{4}-\d{2}-\d{2}) /";
-        if (preg_match($pattern, $input, $matches) == 1) {
-            // Rather than throwing exceptions around, silently bypass this
-            try {
-                $this->completionDate = new \DateTime($matches[2]);
-            } catch (\Exception $e) {
-                return $input;
-            }
-            
-            $this->complete = true;
-            return substr($input, strlen($matches[0]));
-        }
-        return $input;
-    }
- 
-     /**
-     * Find a creation date (after a priority marker).
-     * @param string $input Input string to check.
-     * @return string Returns the rest of the task, without this part.
-     */
-    protected function findCreated($input)
-    {
-        // Match a YYYY-MM-DD formatted date, followed by a space.
-        // Invalid dates can be caught but checked after.
-        $pattern = "/^(\d{4}-\d{2}-\d{2}) /";
-        if (preg_match($pattern, $input, $matches) == 1) {
-            // Rather than throwing exceptions around, silently bypass this
-            try {
-                $this->creationDate = new \DateTime($matches[1]);
-            } catch (\Exception $e) {
-                return $input;
-            }
-            return substr($input, strlen($matches[0]));
-        }
-        return $input;
-    }
 
-    /**
-     * Find a priority marker.
-     * Priorities are signified by an uppercase letter in parentheses.
-     *
-     * @param string $input Input string to check.
-     * @return string Returns the rest of the task, without this part.
-     */
-    protected function findPriority($input)
-    {
-        // Match one uppercase letter in brackers, followed by a space.
-        $pattern = "/^\(([A-Z])\) /";
-        if (preg_match($pattern, $input, $matches) == 1) {
-            $this->priority = $matches[1];
-            return substr($input, strlen($matches[0]));
-        }
-        return $input;
-    }
-    
-    /**
-     * Find @contexts within the task
-     *
-     * @param string $input Input string to check
-     */
-    protected function findContexts($input)
-    {
-        // Match an at-sign, any non-whitespace character, ending with
-        // an alphanumeric or underscore, followed either by the end of
-        // the string or by whitespace.
-        $pattern = "/@(\S+\w)(?=\s|$)/";
-        if (preg_match_all($pattern, $input, $matches) > 0) {
-            $this->addContext($matches[1]);
-        }
-    }
-    
-    /**
-     * Find +projects within the task
-     * @param string $input Input string to check
-     */
-    protected function findProjects($input)
-    {
-        // The same rules as contexts, except projects use a plus.
-        $pattern = "/\+(\S+\w)(?=\s|$)/";
-        if (preg_match_all($pattern, $input, $matches) > 0) {
-            $this->addProject($matches[1]);
-        }
-    }
-    
-    /**
-     * Metadata can be held in the string in the format key:value.
-     * This is usually used by add-ons, which provide their own
-     * formatting rules for tasks.
-     * This data can be accessed using __get() and __isset().
-     *
-     * @param string $input Input string to check
-     * @see __get
-     * @see __set
-     */
-    protected function findMetadata($input)
-    {
-        // Match a word (alphanumeric+underscores), a colon, followed by
-        // any non-whitespace character.
-        $pattern = "/(?<=\s|^)(\w+):(\S+)(?=\s|$)/";
-        if (preg_match_all($pattern, $input, $matches, PREG_SET_ORDER) > 0) {
-            $this->addMetadata($matches);
-        }
-    }
 
-    /**
-     * Find a due date within the metadata.
-     * @return void
-     */
-    protected function findDue()
-    {
-        foreach ($this->metadata as $meta) {
-            if ($meta->key == 'due') {
-                $this->due = true;
-                $this->dueDate = new \DateTime($meta->value);
-                return;
-            }
-        }
-    }
+
 
     /**
      * set priority of a task, overrides old $priority
@@ -473,7 +491,7 @@ class Task
             }
             ++$this->priority;
             $step--;
-        } while ($step > 0)
+        } while ($step > 0);
         // if steps greater then the alphabet, set to A
     }
 

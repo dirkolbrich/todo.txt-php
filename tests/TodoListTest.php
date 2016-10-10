@@ -7,44 +7,47 @@ use TodoTxt\TodoList;
 class TodoListTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * Test Todolist instantiation with different input types
+     * Test Todolist instantiation single string input
      */
-    public function testStandard()
+    public function testStandardString()
     {
         $task = "This is a task";
         $todolist = new TodoList($task);
         $this->assertCount(1, $todolist->getTasks());
+    }
 
+    /**
+     * Test Todolist instantiation with new line separated string input
+     */
+    public function testStandardNewLineString()
+    {
+        $taskline = "This is a task\nThis is another task\nThis is yet a third task";
+        $todolist = new TodoList($taskline);
+        $this->assertCount(3, $todolist->getTasks());
+    }
+
+    /**
+     * Test Todolist instantiation with array input
+     */
+    public function testStandardArray()
+    {
         $tasks = array(
             "This is a task",
             "This is another task");
         $todolist = new TodoList($tasks);
         $this->assertCount(2, $todolist->getTasks());
+    }
 
-        // test with new line file
-        $taskline = "This is a task\nThis is another task\nThis is yet a third task";
-        $todolist = new TodoList($taskline);
-        $this->assertCount(3, $todolist->getTasks());
-
-    }    /**
+    /**
      * Test simple tasks, whitespace trimming and a few edge cases
      */
     public function testAddTask()
     {
         $todolist = new TodoList();
-        $todolist->add("This is a task");
+        $todolist->addTask("This is a task");
         $this->assertCount(1, $todolist->getTasks());
         $this->assertInstanceOf("TodoTxt\Task", $todolist->getTask(0));
         $this->assertEquals((string) $todolist->getTask(0)->getTask(), "This is a task");
     }
 
-    public function testParseTasks()
-    {
-        $todolist = new TodoList();
-        $tasks = "This is a task\nThis is another task\nThis is yet a third task";
-        $todolist->parse($tasks);
-        $this->assertCount(3, $todolist->getTasks());
-        $this->assertEquals((string) $todolist->getTasks()[0]->getTask(), "This is a task");
-        $this->assertEquals((string) $todolist->getTasks()[1]->getTask(), "This is another task");
-        $this->assertEquals((string) $todolist->getTasks()[2]->getTask(), "This is yet a third task");
-    }}
+}

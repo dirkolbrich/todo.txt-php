@@ -62,49 +62,60 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      *
      * @var array
      */
-    protected $metadataList = array();
+    protected $metadata = array();
 
     /**
-     * @param mixed $tasks
+     * @param mixed $input
      */
-    public function __construct($string = null)
+    public function __construct($input = null)
     {
         // check for input type
-        if (!is_null($tasks)) {
-            switch ($tasks) {
-                case (is_string($tasks) && strstr($tasks, PHP_EOL)):
-                    $this->parse($tasks);
+        if (!is_null($input)) {
+            switch ($input) {
+                // $input is new line separated string
+                case (is_string($input) && strstr($input, PHP_EOL)):
+                    $this->splitString($input);
                     break;
-                case (is_array($tasks)):
-                    foreach ($tasks as $task) {
-                        $this->add($task);
+                // $input is an array
+                case (is_array($input)):
+                    foreach ($input as $line) {
+                        $this->addTask($line);
                     }
                     break;
+                // $input is a simple string
                 default:
-                    $this->add($tasks);
+                    $this->addTask($input);
                     break;
             }
         }
     }
-    
-    public static function make($string = null)
+   
+    /**
+     * @param mixed $string
+     */
+    public static function make($input = null)
     {
-        
+        // static function
     }
     
     /**
-     * Parses tasks from a newline separated string
+     * Split from a newline separated string into single lines 
      *
-     * @param string $taskFile A newline-separated list of tasks.
+     * @param string $string A newline-separated string of tasks.
+     * @return array $lines
      */
-    public function parse($taskFile)
+    public function splitString($string)
     {
-        foreach (explode(self::$lineSeparator, $taskFile) as $line) {
+        $lines = array();
+
+        foreach (explode(self::$lineSeparator, $string) as $line) {
             $line = trim($line);
             if (strlen($line) > 0) {
-                $this->add($line);
+                $lines[] = $line;
             }
         }
+
+        return $lines;
     }
 
     /**
@@ -141,6 +152,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         }
     }
 
+    /**
      * Parses single lines from a newline separated string
      *
      * @param string $string A newline-separated list of tasks.
@@ -148,7 +160,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      */
     public function parseString($string)
     {
-        $lines = array()
+        $lines = array();
         
         foreach (explode(self::$lineSeparator, $string) as $line) {
             $line = trim($line);
