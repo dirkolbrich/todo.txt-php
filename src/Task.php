@@ -2,21 +2,14 @@
 
 namespace TodoTxt;
 
-// use Project;
-// use Context;
 use TodoTxt\Exceptions\EmptyStringException;
+use TodoTxt\Exceptions\InvalidStringException;
 use TodoTxt\Exceptions\CompletionParadoxException;
 use TodoTxt\Exceptions\CannotCalculateAgeException;
 
 /**
  * Encapsulates a single line of a todo.txt list.
  * Handles the parsing of contexts, projects and other info from a task.
- *
- * @TODO: Make the find* methods public static?
- * @TODO: Devise a good way to write plug-ins for this process. Possibly
- *        by simply extending the class.
- * @TODO: Make a ContextList and ProjectList class to hold contexts and
- *        projects (so we can do count($list->projects) etc.).
  */
 class Task
 {
@@ -40,24 +33,36 @@ class Task
     protected $complete = false;
 
     /**
+     * @var bool
+     */
+    protected $due = false;
+
+    /**
      * @var \DateTime
      */
     protected $completionDate;
-    
-    /**
-     * A single-character, uppercase priority, if found
-     *
-     * @var string
-     */
-    protected $priority;
-    
+
     /**
      * The date the task was created
      *
      * @var \DateTime
      */
     protected $creationDate;
-    
+
+    /**
+     * The date the task was created
+     *
+     * @var \DateTime
+     */
+    protected $dueDate;
+
+    /**
+     * A single-character, uppercase priority, if found
+     *
+     * @var string
+     */
+    protected $priority;
+        
     /**
      * A list of project names found (case-sensitive)
      *
@@ -79,7 +84,7 @@ class Task
      * @see __get
      * @see __set
      */
-    protected $metadata = array();
+    public $metadata = array();
 
     /**
      * Create a new task from a raw line held in a todo.txt file.
@@ -105,6 +110,7 @@ class Task
         $this->findContexts($result);
         $this->findProjects($result);
         $this->findMetadata($result);
+        $this->findDue($result);
     }
     
     /**
@@ -147,7 +153,7 @@ class Task
      * Using this method will prevent duplication in the array.
      * @param array $projects Array of project names.
      */
-    public function addProjects(array $projects)
+    public function addProject(array $projects)
     {
         $projects = array_map("trim", $projects);
         foreach ($projects as $project) {
@@ -161,7 +167,7 @@ class Task
      * Using this method will prevent duplication in the array.
      * @param array $contexts Array of context names.
      */
-    public function addContexts(array $contexts)
+    public function addContext(array $contexts)
     {
         $contexts = array_map("trim", $contexts);
         foreach ($contexts as $context) {
@@ -169,7 +175,19 @@ class Task
         }
         // $this->contexts = array_unique(array_merge($this->contexts, $contexts));
     }
-    
+
+    /**
+     * Add an array of metadata to the list.
+     * Using this method will prevent duplication in the array.
+     * @param array $metadatas Array of mtadata keys and values.
+     */
+    public function addMetadata(array $metadatas)
+    {
+        foreach ($metadatas as $metadata) {
+            $this->metadata[] = new MetaData($metadata);
+        }
+    }
+
     /**
      * Access meta-properties, as held by key:value metadata in the task.
      * @param string $name The name of the meta-property.
@@ -177,7 +195,12 @@ class Task
      */
     public function __get($name)
     {
-        return isset($this->metadata[$name]) ? $this->metadata[$name] : null;
+        foreach ($this->metadata as $metadata) {
+            if ($metadata->key == $name) {
+                return $metadata->value;
+            }
+        }
+        return null;
     }
     
     /**
@@ -198,59 +221,26 @@ class Task
      */
     public function __toString()
     {
-        $task = '';
-        if ($this->isCompleted) {
-            $task .= sprintf('x %s ', $this->completionDate->format("Y-m-d"));
-        }
-        
-        if (isset($this->priority)) {
-            $task .= sprintf('(%s) ', strtoupper($this->priority));
-        }
-        
-        if (isset($this->creationDate)) {
-            $task .= sprintf('%s ', $this->created->format("Y-m-d"));
-        }
-        
-        $task .= $this->task;
-
+        $task = $this->rebuildRawTaskString();
         return $task;
     }
     
     /**
      * @return bool
      */
-    public function isCompleted()
+    public function isComplete()
     {
         return $this->complete;
     }
-    
-    /**
-     * @return \DateTime
-     */
-    public function getCompletionDate()
-    {
-        return $this->isCompleted() && isset($this->completionDate) ? $this->completionDate : null;
-    }
-    
-    /**
-     * set task to complete
-     */
-    public function complete()
-    {
-        $this->complete = true;
-        // set completionDate
-        // parse new $rawTask string
-    }
 
     /**
-     * set task to uncomplete
+     * @return bool
      */
-    public function uncomplete()
+    public function isDue()
     {
-        $this->complete = false;
-        // remove completionDate from $rawTask string
+        return $this->due;
     }
-
+    
     /**
      * @return \DateTime|null
      */
@@ -259,6 +249,42 @@ class Task
         return isset($this->creationDate) ? $this->creationDate : null;
     }
     
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getCompletionDate()
+    {
+        return $this->isComplete() && isset($this->completionDate) ? $this->completionDate : null;
+    }
+    
+    /**
+     * @return \DateTime
+     */
+    public function getDueDate()
+    {
+        return $this->isDue() && isset($this->dueDate) ? $this->dueDate : null;
+    }
+
+    /**
+     * set task to complete
+     */
+    public function complete()
+    {
+        $this->complete = true;
+        $this->completionDate = new \DateTime("now");
+        $this->rawTask = $this->rebuildRawTaskString();
+    }
+
+    /**
+     * set task to uncomplete
+     */
+    public function uncomplete()
+    {
+        $this->complete = false;
+        $this->rawTask = $this->rebuildRawTaskString();
+    }
+
     /**
      * Get the remainder of the task (sans completed marker, creation date and priority)
      *
@@ -306,26 +332,8 @@ class Task
         }
         return $input;
     }
-    
-    /**
-     * Find a priority marker.
-     * Priorities are signified by an uppercase letter in parentheses.
-     *
-     * @param string $input Input string to check.
-     * @return string Returns the rest of the task, without this part.
-     */
-    protected function findPriority($input)
-    {
-        // Match one uppercase letter in brackers, followed by a space.
-        $pattern = "/^\(([A-Z])\) /";
-        if (preg_match($pattern, $input, $matches) == 1) {
-            $this->priority = $matches[1];
-            return substr($input, strlen($matches[0]));
-        }
-        return $input;
-    }
-    
-    /**
+ 
+     /**
      * Find a creation date (after a priority marker).
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
@@ -346,6 +354,24 @@ class Task
         }
         return $input;
     }
+
+    /**
+     * Find a priority marker.
+     * Priorities are signified by an uppercase letter in parentheses.
+     *
+     * @param string $input Input string to check.
+     * @return string Returns the rest of the task, without this part.
+     */
+    protected function findPriority($input)
+    {
+        // Match one uppercase letter in brackers, followed by a space.
+        $pattern = "/^\(([A-Z])\) /";
+        if (preg_match($pattern, $input, $matches) == 1) {
+            $this->priority = $matches[1];
+            return substr($input, strlen($matches[0]));
+        }
+        return $input;
+    }
     
     /**
      * Find @contexts within the task
@@ -359,7 +385,7 @@ class Task
         // the string or by whitespace.
         $pattern = "/@(\S+\w)(?=\s|$)/";
         if (preg_match_all($pattern, $input, $matches) > 0) {
-            $this->addContexts($matches[1]);
+            $this->addContext($matches[1]);
         }
     }
     
@@ -372,7 +398,7 @@ class Task
         // The same rules as contexts, except projects use a plus.
         $pattern = "/\+(\S+\w)(?=\s|$)/";
         if (preg_match_all($pattern, $input, $matches) > 0) {
-            $this->addProjects($matches[1]);
+            $this->addProject($matches[1]);
         }
     }
     
@@ -392,9 +418,97 @@ class Task
         // any non-whitespace character.
         $pattern = "/(?<=\s|^)(\w+):(\S+)(?=\s|$)/";
         if (preg_match_all($pattern, $input, $matches, PREG_SET_ORDER) > 0) {
-            foreach ($matches as $match) {
-                $this->metadata[$match[1]] = $match[2];
+            $this->addMetadata($matches);
+        }
+    }
+
+    /**
+     * Find a due date within the metadata.
+     * @return void
+     */
+    protected function findDue()
+    {
+        foreach ($this->metadata as $meta) {
+            if ($meta->key == 'due') {
+                $this->due = true;
+                $this->dueDate = new \DateTime($meta->value);
+                return;
             }
         }
+    }
+
+    /**
+     * set priority of a task, overrides old $priority
+     * @param string $priority
+     */
+    public function setPriority($priority)
+    {
+
+        if (!ctype_alpha($priority) && !ctype_upper($priority)) {
+            throw new InvalidStringException;
+        }
+        $this->priority = $priority;
+        $this->rawTask = $this->rebuildRawTaskString();
+    }
+
+    /**
+     * unset $priority of task
+     */
+    public function unsetPriority()
+    {
+        $this->priority = null;
+        $this->rawTask = $this->rebuildRawTaskString();
+    }
+
+    /**
+     * increase $priority of task
+     * @param integer $step
+     */
+    public function increasePriority($step = 1)
+    {
+        // get $priority and set it one higher
+        do {
+            if ($this->priority === 'A') {
+                return;
+            }
+            ++$this->priority;
+            $step--;
+        } while ($step > 0)
+        // if steps greater then the alphabet, set to A
+    }
+
+    /**
+     * decrease $priority of task
+     * @param integer $step
+     */
+    public function decreasePriority($step = 1)
+    {
+        // get $priority and set it one higher
+        // if steps greater then the alphabet, set to Z
+    }
+
+    /**
+     * Re-build the task string.
+     *
+     * @return string The task as a todo.txt line.
+     */
+    public function rebuildRawTaskString()
+    {
+        $task = '';
+        if ($this->isComplete()) {
+            $task .= sprintf('x %s ', $this->completionDate->format("Y-m-d"));
+        }
+        
+        if (isset($this->priority)) {
+            $task .= sprintf('(%s) ', strtoupper($this->priority));
+        }
+        
+        if (isset($this->creationDate)) {
+            $task .= sprintf('%s ', $this->creationDate->format("Y-m-d"));
+        }
+        
+        $task .= $this->task;
+
+        return $task;
     }
 }

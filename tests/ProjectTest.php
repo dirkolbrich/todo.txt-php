@@ -2,7 +2,7 @@
 
 namespace TodoTxt\Tests;
 
-use TodoTxt\Task;
+use TodoTxt\Project;
 
 class ProjectTest extends \PHPUnit_Framework_TestCase
 {
@@ -11,13 +11,14 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
      */
     public function testStandard()
     {
-        $task = new Task("Task with a +project");
-        $this->assertEquals($task->projects[0]->project, "project");
+        $project = new Project("project");
+        $this->assertEquals($project->project, "project");
     }
     
     public function testEmpty()
     {
-        $task = new Task("This is a task");
-        $this->assertEmpty($task->projects);
+        // Empty string
+        $this->setExpectedException('TodoTxt\Exceptions\EmptyStringException');
+        $project = new Project("");
     }
 }

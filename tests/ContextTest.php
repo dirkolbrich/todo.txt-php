@@ -2,7 +2,7 @@
 
 namespace TodoTxt\Tests;
 
-use TodoTxt\Task;
+use TodoTxt\Context;
 
 class ContextTest extends \PHPUnit_Framework_TestCase
 {
@@ -11,13 +11,14 @@ class ContextTest extends \PHPUnit_Framework_TestCase
      */
     public function testStandard()
     {
-        $task = new Task("Task with a @context");
-        $this->assertEquals($task->contexts[0]->context, "context");
+        $context = new Context("context");
+        $this->assertEquals($context->context, "context");
     }
     
     public function testEmpty()
     {
-        $task = new Task("This is a task");
-        $this->assertEmpty($task->contexts);
+        // Empty string
+        $this->setExpectedException('TodoTxt\Exceptions\EmptyStringException');
+        $context = new Context("");
     }
 }

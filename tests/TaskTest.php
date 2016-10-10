@@ -45,7 +45,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         // Valid completion markers
         $task = new Task('x 2011-09-11 Completed task');
-        $this->assertTrue($task->isCompleted());
+        $this->assertTrue($task->isComplete());
         $this->assertInstanceOf('DateTime', $task->getCompletionDate());
         $this->assertEquals($task->getCompletionDate()->format('Y-m-d'), '2011-09-11');
     }
@@ -54,21 +54,21 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         // Test uppercase X
         $task = new Task('X 2011-09-11 Completed task');
-        $this->assertTrue($task->isCompleted());
+        $this->assertTrue($task->isComplete());
     }
     
     public function testInvalidCompletionMarker()
     {
         // Test marker not at start
         $task = new Task('Hello x 2011-08-03 Incomplete task');
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
     }
     
     public function testMissingDate()
     {
         // Missing date
         $task = new Task('x Completed task');
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
     }
     
@@ -76,7 +76,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         // Invalid date not matched by regex
         $task = new Task('x 20111-09-11 Completed task');
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
     }
     
@@ -84,7 +84,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         // Invalid date, matched by regex, DateTime exception caught
         $task = new Task('x 2011-09-50 Completed task');
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
     }
     
@@ -94,6 +94,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         // a creation date
         $task = new Task('2011-08-03 ');
         $this->assertEquals($task->getTask(), '2011-08-03');
+        $this->assertNull($task->getCreationDate());
     }
     
     public function testCompletedNoBodyWhitespace()
@@ -102,13 +103,14 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         // markers detected(?)
         $task = new Task('x 2011-08-03 ');
         $this->assertEquals($task->getTask(), 'x 2011-08-03');
+        $this->assertNull($task->getCompletionDate());
     }
     
     public function testCreationDate()
     {
         // Leading date matched as creation date, rather than completion
         $task = new Task("2011-09-11 Incomplete task");
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
         $this->assertInstanceOf("DateTime", $task->getCreationDate());
         $this->assertEquals($task->getCreationDate()->format("Y-m-d"), "2011-09-11");
@@ -118,7 +120,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         // An invalid date, unmatched by regex
         $task = new Task("20111-09-01 Something");
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
     }
     
@@ -126,7 +128,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     {
         // An invalid date, unmatched by regex, DateTime exception caught
         $task = new Task("2011-09-50 Something");
-        $this->assertFalse($task->isCompleted());
+        $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
     }
     
@@ -151,6 +153,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     public function testValidContext()
     {
         $task = new Task("Update @todotxt.net");
+        $this->assertInstanceOf("TodoTxt\Context", $task->contexts[0]);
         $this->assertCount(1, $task->contexts);        
         $this->assertTrue("todotxt.net" == $task->contexts[0]->context);
     }
@@ -171,6 +174,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     
     public function testValidProject() {
         $task = new Task("Push to +todo.txt-web");
+        $this->assertInstanceOf("TodoTxt\Project", $task->projects[0]);
         $this->assertCount(1, $task->projects);
         $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
     }
@@ -192,17 +196,18 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     public function testValidMetadata()
     {
         $task = new Task("Essay due:today");
-        $this->assertTrue(isset($task->due));
+        $this->assertInstanceOf("TodoTxt\MetaData", $task->metadata[0]);
+        $this->assertCount(1, $task->metadata);
         $this->assertEquals($task->due, "today");
     }
     
     public function testValidMultiMetadata()
     {
         $task = new Task("Hello due:today when:tomorrow");
-        $this->assertTrue(isset($task->due));
-        $this->assertTrue(isset($task->when));
+        $this->assertCount(2, $task->metadata);
         $this->assertEquals($task->due, "today");
         $this->assertEquals($task->when, "tomorrow");
+        $this->assertTrue($task->isDue());
     }
     
     public function testInvalidMetadataKey()
@@ -211,6 +216,13 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         // start of string (i.e. not "-").
         $task = new Task("Important essay was-due:yesterday");
         $this->assertFalse(isset($task->due));
+    }
+
+    public function testValidDue()
+    {
+        $task = new Task('Task with a duedate due:2015-11-20');
+        $this->assertTrue($task->isDue());
+        $this->assertInstanceOf("DateTime", $task->getDueDate());
     }
     
     public function testValidAgeCompleted()
@@ -250,14 +262,74 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     public function testMaximumValid()
     {
         // The maximum valid?
-        $task = new Task("x 2011-09-11 (A) 2011-09-08 Review Tim's pull-request in +todo.txt-web on @github due:2011-09-12");
-        $this->assertTrue($task->isCompleted());
+        $task = new Task("x 2011-09-11 2011-09-08 Review Tim's pull-request in +todo.txt-web on @github due:2011-09-12");
+        $this->assertTrue($task->isComplete());
         $this->assertEquals($task->getCompletionDate()->format("Y-m-d"), "2011-09-11");
-        $this->assertEquals($task->getPriority(), "A");
+        $this->assertNull($task->getPriority());
         $this->assertEquals($task->getCreationDate()->format("Y-m-d"), "2011-09-08");
-        $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
-        $this->assertTrue("github" == $task->contexts[0]->context);
-        $this->assertTrue(isset($task->due));
+        $this->assertTrue($task->projects[0]->project == "todo.txt-web");
+        $this->assertTrue($task->contexts[0]->context == "github");
+        $this->assertTrue($task->isDue());
         $this->assertEquals($task->due, "2011-09-12"); // @todo: plugins
+    }
+
+    public function testCompleteTask()
+    {
+        $task = new Task("complete this task");
+        $task->complete();
+        $this->assertTrue($task->isComplete());
+        $now = new \DateTime("now");
+        $this->assertEquals($task->getCompletionDate()->format("Y-m-d"), $now->format("Y-m-d"));
+    }
+
+    public function testUncompleteTask()
+    {
+        $task = new Task("x 2015-11-20 a completed task");
+        $task->uncomplete();
+        $this->assertFalse($task->isComplete());
+        $this->assertNull($task->getCompletionDate());
+        $this->assertEquals((string) $task, "a completed task");
+    }
+
+    public function testSetPriority()
+    {
+        $task = new Task('A Task needs a priority.');
+        $task->setPriority('A');
+        $this->assertEquals($task->getPriority(), 'A');
+    }
+
+    public function testInvalidPriority()
+    {
+        $this->setExpectedException('TodoTxt\Exceptions\InvalidStringException');
+        $task = new Task('A Task needs a priority.');
+        $task->setPriority('1');
+    }
+
+    public function testInvalidEmptyPriority()
+    {
+        $this->setExpectedException('TodoTxt\Exceptions\InvalidStringException');
+        $task = new Task('A Task needs a priority.');
+        $task->setPriority('');
+    }
+
+    public function testUnsetPriority()
+    {
+        $task = new Task('(A) This task has a priority.');
+        $task->unsetPriority();
+        $this->assertNull($task->getPriority());
+    }
+
+    public function testIncreasePriority()
+    {
+        $task = new Task('(B) This task has a priority.');
+        $task->increasePriority();
+        $this->assertEquals($task->getPriority(), 'A');
+    }
+
+    public function testDecreasePriority()
+    {
+        $task = new Task('(A) This task has a priority.');
+        $task->decreasePriority();
+        $this->assertEquals($task->getPriority(), 'B');
     }
 }

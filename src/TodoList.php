@@ -2,6 +2,14 @@
 
 namespace TodoTxt;
 
+/**
+ * Encapsulates a complete todo.txt list.
+ * Handles the adding and editing of tasks.
+ *
+ * @TODO: Make a ContextList and ProjectList class to hold contexts and
+ *        projects (so we can do count($list->projects) etc.).
+ */
+
 class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializable
 {
     /**
@@ -49,6 +57,13 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     protected $contextsList = array();
 
     /**
+     * Array of Metadata in $tasks
+     *
+     * @var array
+     */
+    protected $metadataList = array();
+
+    /**
      * @param mixed $tasks
      */
     public function __construct($tasks = null)
@@ -58,48 +73,18 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         // check for input type
         if (!is_null($tasks)) {
             switch ($tasks) {
-                case (is_array($tasks)):
-                    $this->addTasks($tasks);
-                    break;
                 case (is_string($tasks) && strstr($tasks, PHP_EOL)):
-                    $this->parseTasks($tasks);
+                    $this->parse($tasks);
+                    break;
+                case (is_array($tasks)):
+                    foreach ($tasks as $task) {
+                        $this->add($task);
+                    }
                     break;
                 default:
-                    $this->addTask($tasks);
+                    $this->add($tasks);
                     break;
             }
-        }
-    }
-    
-    /**
-     * add a task to the $tasks array
-     *
-     * @param mixed $task
-     */
-    public function addTask($task)
-    {
-        if (!($task instanceof Task)) {
-            $task = new Task((string) $task);
-        }
-        $this->tasks[] = $task;
-
-        if ($task->isCompleted()) {
-            $this->done[] = $task;
-        } else {
-            $this->todo[] = $task;
-        }
-
-        $this->addProject($task);
-        $this->addContext($task);
-    }
-    
-    /**
-     * @param array $tasks
-     */
-    public function addTasks(array $tasks)
-    {
-        foreach ($tasks as $task) {
-            $this->addTask($task);
         }
     }
     
@@ -108,16 +93,93 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      *
      * @param string $taskFile A newline-separated list of tasks.
      */
-    public function parseTasks($taskFile)
+    public function parse($taskFile)
     {
         foreach (explode(self::$lineSeparator, $taskFile) as $line) {
             $line = trim($line);
             if (strlen($line) > 0) {
-                $this->addTask($line);
+                $this->add($line);
             }
         }
     }
-    
+
+    /**
+     * add a task to the $tasks array
+     *
+     * @param mixed $task
+     */
+    public function add($task)
+    {
+        if (!($task instanceof Task)) {
+            $task = new Task((string) $task);
+        }
+        $this->tasks[] = $task;
+
+        if ($task->isComplete()) {
+            $this->done[] = $task;
+        } else {
+            $this->todo[] = $task;
+        }
+
+        $this->addProject($task);
+        $this->addContext($task);
+    }
+
+    /**
+     * @param integer $position
+     */
+    public function complete($position = null)
+    {
+        // validate existinence of task
+        // validate isComplete
+        // complete Task
+        // move to $done list, remove from $todo list
+    }
+
+    /**
+     * @param integer $position
+     */
+    public function uncomplete($position = null)
+    {
+        // validate existinence of task
+        // validate isComplete
+        // uncomplete Task
+        // move to $todo list, remove from $done list
+    }
+
+    public function edit($position = null)
+    {
+        // edit the text of the task
+    }
+
+    /**
+     * @param integer $position
+     */
+    public function delete($position = null)
+    {
+        // validate existinence of task
+        // delete Task
+        // remove projects and contexts if not used by other tasks
+        // remove from $tasks, $todo or $done list
+    }
+
+    /**
+     * clear $todos and archive done tasks to $done
+     */
+    public function archive()
+    {
+        // move completed tasks to $done
+        // remove completed tasks from $tasks
+    }
+
+    /**
+     * delete all tasks, todo, done, reset todoList to clear state
+     */
+    public function clear()
+    {
+
+    }
+
     /**
      * get task at position
      *
@@ -137,17 +199,6 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     public function getTasks()
     {
         return $this->tasks;
-    }
-
-    /**
-     * @param integer $position
-     */
-    public function deleteTask($position)
-    {
-        // validate existinence of task
-        // delete Task
-        // remove projects and contexts if not used by other tasks
-        // remove from $tasks, $todo or $done list
     }
 
     /**
@@ -182,6 +233,11 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         // sort standard
     }
 
+    public function sortBy($arg)
+    {
+        // sort by argument
+    }
+
     /**
      * @param string $priority
      */
@@ -214,6 +270,11 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
 
     }
 
+    public function filterBy($arg)
+    {
+        // filter by argument
+    }
+
     /**
      * get only open tasks
      *
@@ -231,37 +292,6 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     public function getDone()
     {
         return $this->done;
-    }
-
-    /**
-     * clear $todos and archive done tasks to $done
-     */
-    public function archive()
-    {
-        // move completed tasks to $done
-        // remove completed tasks from $tasks
-    }
-
-    /**
-     * @param integer $position
-     */
-    public function completeTask($position = null)
-    {
-        // validate existinence of task
-        // validate isComplete
-        // complete Task
-        // move to $done list, remove from $todo list
-    }
-
-    /**
-     * @param integer $position
-     */
-    public function uncompleteTask($position = null)
-    {
-        // validate existinence of task
-        // validate isComplete
-        // uncomplete Task
-        // move to $todo list, remove from $done list
     }
 
     /**
