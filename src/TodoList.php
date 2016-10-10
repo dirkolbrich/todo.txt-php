@@ -22,6 +22,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      * @var array
      */
     protected $todo = array();
+    
     /**
      * list of completed tasks
      *
@@ -35,40 +36,41 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     protected $position = 0;
 
     /**
-     * Array of Porjects in tasks
+     * Array of Projects in tasks
      *
      * @var array
      */
-    protected $projectsList = array();
+    protected $projects = array();
 
     /**
      * Array of Contexts in $tasks
      *
      * @var array
      */
-    protected $contextsList = array();
+    protected $contexts = array();
 
     /**
      * @param mixed $tasks
      */
-    public function __construct($tasks = null)
+    public function __construct($string = null)
     {
-        $this->rewind();
-        
         // check for input type
-        if (!is_null($tasks)) {
-            switch ($tasks) {
-                case (is_array($tasks)):
-                    $this->addTasks($tasks);
-                    break;
-                case (is_string($tasks) && strstr($tasks, PHP_EOL)):
-                    $this->parseTasks($tasks);
+        if (!is_null($string)) {
+            switch ($string) {
+                case (is_string($string) && strstr($string, PHP_EOL)):
+                    $lines = $this->parseString($string);
+                    $this->addTasks($lines);
                     break;
                 default:
-                    $this->addTask($tasks);
+                    $this->addTask($string);
                     break;
             }
         }
+    }
+    
+    public static function make($string = null)
+    {
+        
     }
     
     /**
@@ -76,10 +78,10 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      *
      * @param mixed $task
      */
-    public function addTask($task)
+    public function addTask($string)
     {
-        if (!($task instanceof Task)) {
-            $task = new Task((string) $task);
+        if (!($string instanceof Task)) {
+            $task = new Task((string) $string);
         }
         $this->tasks[] = $task;
 
@@ -96,26 +98,31 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     /**
      * @param array $tasks
      */
-    public function addTasks(array $tasks)
+    public function addTasks(array $lines)
     {
-        foreach ($tasks as $task) {
-            $this->addTask($task);
+        foreach ($lines as $string) {
+            $this->addTask($string);
         }
     }
     
     /**
-     * Parses tasks from a newline separated string
+     * Parses single lines from a newline separated string
      *
-     * @param string $taskFile A newline-separated list of tasks.
+     * @param string $string A newline-separated list of tasks.
+     * @return array $lines
      */
-    public function parseTasks($taskFile)
+    public function parseString($string)
     {
-        foreach (explode(self::$lineSeparator, $taskFile) as $line) {
+        $lines = array()
+        
+        foreach (explode(self::$lineSeparator, $string) as $line) {
             $line = trim($line);
             if (strlen($line) > 0) {
-                $this->addTask($line);
+                $lines[] = $line;
             }
         }
+        
+        return $lines;
     }
     
     /**
@@ -129,6 +136,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         $this->seek($position);
         return $this->tasks[$position];
     }
+    
     /**
      * get all tasks
      *
@@ -203,7 +211,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      */
     public function sortByContext($context = null)
     {
-
+        // sort by context, standard alphabetical or via specific context
     }
 
     /**
@@ -211,7 +219,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      */
     public function sortByMetaData($metadata = null)
     {
-
+        // sort by metadata, standard alphabetical or via specific metadata
     }
 
     /**
@@ -223,6 +231,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     {
         return $this->todo;
     }
+    
     /**
      * get done tasks, helpful to write these to a done.txt file
      *
