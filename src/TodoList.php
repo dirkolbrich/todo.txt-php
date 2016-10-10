@@ -30,6 +30,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      * @var array
      */
     protected $todo = array();
+    
     /**
      * list of completed tasks
      *
@@ -43,18 +44,18 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     protected $position = 0;
 
     /**
-     * Array of Porjects in tasks
+     * Array of Projects in tasks
      *
      * @var array
      */
-    protected $projectsList = array();
+    protected $projects = array();
 
     /**
      * Array of Contexts in $tasks
      *
      * @var array
      */
-    protected $contextsList = array();
+    protected $contexts = array();
 
     /**
      * Array of Metadata in $tasks
@@ -66,10 +67,8 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     /**
      * @param mixed $tasks
      */
-    public function __construct($tasks = null)
+    public function __construct($string = null)
     {
-        $this->rewind();
-        
         // check for input type
         if (!is_null($tasks)) {
             switch ($tasks) {
@@ -86,6 +85,11 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
                     break;
             }
         }
+    }
+    
+    public static function make($string = null)
+    {
+        
     }
     
     /**
@@ -108,10 +112,10 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      *
      * @param mixed $task
      */
-    public function add($task)
+    public function addTask($string)
     {
-        if (!($task instanceof Task)) {
-            $task = new Task((string) $task);
+        if (!($string instanceof Task)) {
+            $task = new Task((string) $string);
         }
         $this->tasks[] = $task;
 
@@ -126,25 +130,34 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     }
 
     /**
-     * @param integer $position
+     * add a task for multiple lines
+     *
+     * @param array $lines
      */
-    public function complete($position = null)
+    public function addTasks(array $lines)
     {
-        // validate existinence of task
-        // validate isComplete
-        // complete Task
-        // move to $done list, remove from $todo list
+        foreach ($lines as $string) {
+            $this->addTask($string);
+        }
     }
 
-    /**
-     * @param integer $position
+     * Parses single lines from a newline separated string
+     *
+     * @param string $string A newline-separated list of tasks.
+     * @return array $lines
      */
-    public function uncomplete($position = null)
+    public function parseString($string)
     {
-        // validate existinence of task
-        // validate isComplete
-        // uncomplete Task
-        // move to $todo list, remove from $done list
+        $lines = array()
+        
+        foreach (explode(self::$lineSeparator, $string) as $line) {
+            $line = trim($line);
+            if (strlen($line) > 0) {
+                $lines[] = $line;
+            }
+        }
+        
+        return $lines;
     }
 
     public function edit($position = null)
@@ -191,6 +204,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         $this->seek($position);
         return $this->tasks[$position];
     }
+    
     /**
      * get all tasks
      *
@@ -259,7 +273,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      */
     public function sortByContext($context = null)
     {
-
+        // sort by context, standard alphabetical or via specific context
     }
 
     /**
@@ -267,7 +281,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      */
     public function sortByMetaData($metadata = null)
     {
-
+        // sort by metadata, standard alphabetical or via specific metadata
     }
 
     public function filterBy($arg)
@@ -284,6 +298,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     {
         return $this->todo;
     }
+    
     /**
      * get done tasks, helpful to write these to a done.txt file
      *
