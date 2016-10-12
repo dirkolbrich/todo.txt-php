@@ -27,81 +27,214 @@ $file = readFile('/path/to/file.txt');
 $todoList = new TodoList($file);
 ```
 
+##Collection Structure
+```php
+TodoList{
+    position => $position,
+    tasks(
+        [0] => Task{
+            id => $id
+            raw => $raw
+            task => $task
+            creationDate => Date
+            done => bool
+            doneDate => Date
+            due => bool
+            dueDate => Date
+            priority => $prio
+            projects(
+                [0] => Project{},
+                // ...
+            )
+            contexts(
+                [0] => Context{},
+                // ...
+            )
+            metadata(
+                [0] => Metadata{},
+                // ...
+            )
+        },
+        // ...
+    ),
+    todo(
+        [0] => Task{
+            // ...
+        },
+        // ...
+    ),
+    done(
+        [0] => Task{
+            // ...
+        },
+        // ...
+    ),
+    projects(
+        [0] => Project{
+            $id
+            project
+        },
+        // ...
+    ),
+    contexts(
+        [0] => Context{
+            $id
+            $context
+        },
+        // ...
+    ),
+    metadata(
+        [0] => Metadata{
+            $id
+            $key
+            $value
+        },
+        // ...
+    ),
+};
+```
+
+
 ##Function Reference
 
 ###TodoList.php
 
-`$tasks`
-`$todos`
-`$done`
-`$projects`
-`$contexts`
-`$metadata`
+variables
+
+```php
+$position
+$tasks
+$todos
+$done
+$projects
+$contexts
+$metadata
+```
 
 `__construct()`
 `static make()`
 `splitString($string)`
-`addTask()`
-`getTask()`
-`updateTask()`
-`deleteTask()`
-`completeTask()`
-`sort()`
-`sortBy()`
-`sortByPriority()`
-`sortByProject()`
-`sortByContext()`
-`sortByDueDate()`
+
+public methods
+
+```php
+add($task)
+addMultiple(array $tasks)
+addDone($task)
+addPriority($task, $priority)
+do($task)
+doAll()
+undo($task)
+edit($task)
+append($task)
+prepend(task)
+delete($task)
+deleteAll()
+prioritize($task, $priority)
+unprioritize($task)
+deprioritize($task)
+list($term, $negate)
+listAll($term, $negate)
+listPrio($priority, $negate)
+listProj($project, $negate}
+listCon($context, $negate)
+listMeta($metadata, $negate)
+sort()
+sortBy($term)
+sortByPrio()
+sortByProject()
+sortByContext()
+sortByDueDate()
+filter($term)
+archive()
+```
+
+private methods
+
+```php
+```
 
 ###Task.php
 
-`$raw`
-`$task`
-`$creationDate`
-`$completionDate`
-`$complete`
-`$priority`
-`$project`
-`$context`
-`$metadata`
+variables
 
-`create()`
-`read()`
-`update()`
-`delete()`
-`isComplete()`
-`complete()`
-`uncomplete()`
-`hasPriority()`
-`setPriority()`
-`unsetPriority()`
-`increasePriority()`
-`decreasePriority()`
-`isDue()`
-`setDue()`
-`unsetDue()`
-`age()`
+```php
+$id
+$raw
+$task
+$creationDate
+$done
+$doneDate
+$due
+$dueDate
+$priority
+$project
+$context
+$metadata
+```
 
-`parseTask()`
-`findCompleted()`
-`findPriority()`
-`findCreated()`
-`findProject()`
-`findContext()`
-`findMetaData()`
-`findDueDate()`
+public methods
 
+```php
+create()
+read()
+update($task)
+delete()
+isDone()
+do()
+undo()
+hasPrio()
+setPrio($priority)
+unsetPrio()
+increasePrio()
+decreasePrio()
+isDue()
+setDue($dueDate)
+unsetDue()
+age()
+```
+
+private methods
+
+```php
+parse($task)
+findCompleted()
+findPriority()
+findCreated()
+findProject()
+findContext()
+findMetaData()
+findDueDate()
+```
 
 ###Project.php
 
-`$project`
+variables
+
+```php
+$id
+$project
+```
 
 ###Context.php
 
-`$context`
+variables
+
+```php
+$id
+$context
+```
 
 ###MetaData.php
 
-`$key`
-`$value`
+variables
 
+```php
+$id
+$key
+$value
+```
+
+##Program Flow
+
+### Initialisation

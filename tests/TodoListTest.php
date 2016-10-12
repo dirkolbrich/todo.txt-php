@@ -21,7 +21,7 @@ class TodoListTest extends \PHPUnit_Framework_TestCase
      */
     public function testStandardNewLineString()
     {
-        $taskline = "This is a task\nThis is another task\nThis is yet a third task";
+        $taskline = "This is a task\nThis is another task\nThis is a third task";
         $todolist = new TodoList($taskline);
         $this->assertCount(3, $todolist->getTasks());
     }
@@ -41,10 +41,10 @@ class TodoListTest extends \PHPUnit_Framework_TestCase
     /**
      * Test simple tasks, whitespace trimming and a few edge cases
      */
-    public function testAddTask()
+    public function testAdd()
     {
         $todolist = new TodoList();
-        $todolist->addTask("This is a task");
+        $todolist->add("This is a task");
         $this->assertCount(1, $todolist->getTasks());
         $this->assertInstanceOf("TodoTxt\Task", $todolist->getTask(0));
         $this->assertEquals((string) $todolist->getTask(0)->getTask(), "This is a task");

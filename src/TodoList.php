@@ -73,38 +73,39 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         if (!is_null($input)) {
             switch ($input) {
                 // $input is new line separated string
-                case (is_string($input) && strstr($input, PHP_EOL)):
-                    $this->splitString($input);
+                case (is_string($input) && strpos($input, PHP_EOL)):
+                    $tasks = $this->split($input);
+                    $this->addMultiple($tasks);
                     break;
                 // $input is an array
                 case (is_array($input)):
-                    foreach ($input as $line) {
-                        $this->addTask($line);
-                    }
+                    $this->addMultiple($input);
                     break;
                 // $input is a simple string
                 default:
-                    $this->addTask($input);
+                    $this->add($input);
                     break;
             }
         }
     }
    
     /**
-     * @param mixed $string
+     * named constructor
+     * @param mixed $input
+     * @return TodoList
      */
     public static function make($input = null)
     {
-        // static function
+        return new static($input);
     }
     
     /**
-     * Split from a newline separated string into single lines 
+     * Split a newline separated string into single lines.
      *
      * @param string $string A newline-separated string of tasks.
      * @return array $lines
      */
-    public function splitString($string)
+    private function split($string)
     {
         $lines = array();
 
@@ -119,14 +120,14 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     }
 
     /**
-     * add a task to the $tasks array
+     * add a new task
      *
      * @param mixed $task
      */
-    public function addTask($string)
+    public function add($task)
     {
-        if (!($string instanceof Task)) {
-            $task = new Task((string) $string);
+        if (!($task instanceof Task)) {
+            $task = new Task((string) $task);
         }
         $this->tasks[] = $task;
 
@@ -138,40 +139,26 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
 
         $this->addProject($task);
         $this->addContext($task);
+        $this->addMetadata($task);
     }
 
     /**
-     * add a task for multiple lines
+     * add multiple new tasks
      *
-     * @param array $lines
+     * @param array $tasks
      */
-    public function addTasks(array $lines)
+    public function addMultiple(array $tasks)
     {
-        foreach ($lines as $string) {
-            $this->addTask($string);
+        foreach ($tasks as $task) {
+            $this->add($task);
         }
     }
-
+    
+    
     /**
-     * Parses single lines from a newline separated string
+     * edit a task
      *
-     * @param string $string A newline-separated list of tasks.
-     * @return array $lines
      */
-    public function parseString($string)
-    {
-        $lines = array();
-        
-        foreach (explode(self::$lineSeparator, $string) as $line) {
-            $line = trim($line);
-            if (strlen($line) > 0) {
-                $lines[] = $line;
-            }
-        }
-        
-        return $lines;
-    }
-
     public function edit($position = null)
     {
         // edit the text of the task
@@ -453,17 +440,27 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      */
     public function serialize()
     {
-        return serialize($this->tasks);
+        return serialize(
+            array(
+                'tasks' => this->tasks,
+                'todo' => this->todo,
+                'done' => this->done,
+            )
+        );
     }
     
     /**
-     * unserialize the $tasks array
+     * unserialize data into properties
      *
-     * @param array $tasks
+     * @param array $data
      * @return void
      */
-    public function unserialize($tasks)
+    public function unserialize($data)
     {
-        $this->tasks = unserialize($tasks);
+        $data = unserialize($data);
+        
+        $this->tasks = $data['tasks'];
+        $this->todo = $data['todo'];
+        $this->done = $data['done'];
     }
 }
