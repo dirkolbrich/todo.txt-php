@@ -415,7 +415,7 @@ class Task
      */
     public function hasPrio()
     {
-        if (isset($this->priority) {
+        if (isset($this->priority)) {
             return true;
         }
         return false;
