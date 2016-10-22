@@ -500,9 +500,9 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     {
         return serialize(
             array(
-                'tasks' => this->tasks,
-                'todo' => this->todo,
-                'done' => this->done,
+                'tasks' => $this->tasks,
+                'todo' => $this->todo,
+                'done' => $this->done,
             )
         );
     }
