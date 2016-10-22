@@ -2,7 +2,7 @@
 
 namespace TodoTxt;
 
-use Task;
+use TodoTxt\Task;
 
 /**
  * Encapsulates a complete todo.txt list.
