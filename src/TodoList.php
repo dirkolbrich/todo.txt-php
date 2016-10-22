@@ -77,7 +77,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
                     break;
                 // $input is a simple string
                 default:
-                    $this->add($input);
+                    $this->addTask($input);
                     break;
             }
         }
@@ -120,7 +120,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param mixed $task
      * @return Task
      */
-    public function add($task)
+    public function addTask($task)
     {
         if (!($task instanceof Task)) {
             $task = new Task((string) $task);
@@ -148,7 +148,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     public function addMultiple(array $tasks)
     {
         foreach ($tasks as $task) {
-            $this->add($task);
+            $this->addTask($task);
         }
     }
     
@@ -159,8 +159,8 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      */
     public function addDone($task)
     {
-        $task = $this->add($task);
-        $task->complete();
+        $task = $this->addTask($task);
+        $this->doTask($task->id);
     }
 
     /**
@@ -171,7 +171,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      */
     public function addPriority($task, $priority)
     {
-        $task = $this->add($task);
+        $task = $this->addTask($task);
         $task->setPrio($priority);
     }
 
@@ -219,7 +219,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    public function do($id)
+    public function doTask($id)
     {
         // check if task exists
         $task = $this->getTask($id);
@@ -234,7 +234,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     public function doAll()
     {
         foreach ($this->todo as $task) {
-            $this->do($task->id);
+            $this->doTask($task->id);
         }
     }
     
@@ -243,12 +243,12 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    public function undo($id)
+    public function undoTask($id)
     {
         // check if task exists
         $task = $this->getTask($id);
         $task->uncomplete();
-        $this->removeTaskFromDone($task);
+        $this->removeTaskFromDone($task->id);
         $this->todo[] = $task;
     }
 
@@ -258,23 +258,26 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     public function undoAll()
     {
         foreach ($this->done as $task) {
-            $this->undo($task->id);
+            $this->undoTask($task->id);
         }
     }
     
     /**
      * edit a task
      *
+     * @param string $id
      */
-    public function edit($id, $task = null)
+    public function editTask($id)
     {
         // edit the text of the task
     }
 
     /**
-     * @param string $position
+     * delte a task from this todolist
+     *
+     * @param string $id
      */
-    public function delete($position = null)
+    public function deleteTask($id)
     {
         // validate existinence of task
         // delete Task
@@ -302,12 +305,12 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * remove a task from the $todo list
      *
-     * @param Task
+     * @param string $id
      */
-    protected function removeTaskFromTodo($task)
+    protected function removeTaskFromTodo($id)
     {
         foreach ($this->todo as $key => $todo) {
-            if ($todo->id == $task->id) {
+            if ($todo->id === $id) {
                 unset($this->todo[$key]);
             }
         }
@@ -317,12 +320,12 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * remove a task from the $done list
      *
-     * @param Task
+     * @param string $id
      */
-    protected function removeTaskFromDone($task)
+    protected function removeTaskFromDone($id)
     {
         foreach ($this->done as $key => $done) {
-            if ($done->id == $task->id) {
+            if ($done->id === $id) {
                 unset($this->done[$key]);
             }
         }
