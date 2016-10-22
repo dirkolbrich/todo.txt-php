@@ -2,15 +2,14 @@
 
 namespace TodoTxt;
 
+use Task;
+
 /**
  * Encapsulates a complete todo.txt list.
  * Handles the adding and editing of tasks.
- *
- * @TODO: Make a ContextList and ProjectList class to hold contexts and
- *        projects (so we can do count($list->projects) etc.).
  */
 
-class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializable
+class TodoList implements \ArrayAccess, \Countable, \Serializable
 {
     /**
      * @var string
@@ -37,11 +36,6 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      * @var array
      */
     protected $done = array();
-    
-    /**
-     * @var integer
-     */
-    protected $position = 0;
 
     /**
      * Array of Projects in tasks
@@ -91,6 +85,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
    
     /**
      * named constructor
+     *
      * @param mixed $input
      * @return TodoList
      */
@@ -105,7 +100,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      * @param string $string A newline-separated string of tasks.
      * @return array $lines
      */
-    private function split($string)
+    protected function split($string)
     {
         $lines = array();
 
@@ -123,6 +118,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
      * add a new task
      *
      * @param mixed $task
+     * @return Task
      */
     public function add($task)
     {
@@ -140,6 +136,8 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         $this->addProject($task);
         $this->addContext($task);
         $this->addMetadata($task);
+        
+        return $task;
     }
 
     /**
@@ -154,18 +152,127 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         }
     }
     
+    /**
+     * add new task and mark as done immediately
+     *
+     * @param string $task
+     */
+    public function addDone($task)
+    {
+        $task = $this->add($task);
+        $task->complete();
+    }
+
+    /**
+     * add new task and set priority
+     *
+     * @param string $task
+     * @param string @priority
+     */
+    public function addPriority($task, $priority)
+    {
+        $task = $this->add($task);
+        $task->setPrio($priority);
+    }
+
+    /**
+     * add project from the task to the $projects list
+     *
+     * @param Task $task
+     */
+    protected function addProject($task)
+    {
+        if (isset($task->projects)) {
+            foreach ($task->projects as $project) {
+                $this->projects[] = $project;
+            }
+        }
+    }
+
+    /**
+     * @param Task $task
+     */
+    protected function addContext($task)
+    {
+        if (isset($task->contexts)) {
+            foreach ($task->contexts as $context) {
+                $this->contexts[] = $context;
+            }
+        }
+    }
+    
+    /**
+     * @param Task $task
+     */
+    protected function addMetadata($task)
+    {
+        if (isset($task->metadata)) {
+            foreach ($task->metadata as $meta) {
+                $this->metadata[] = $meta;
+            }
+        }
+    }
+
+
+    /**
+     * do a task, move from $todos to $done
+     *
+     * @param string $id
+     */
+    public function do($id)
+    {
+        // check if task exists
+        $task = $this->getTask($id);
+        $task->complete();
+        $this->removeTaskFromTodo($task);
+        $this->done[] = $task;
+    }
+    
+    /**
+     * do all tasks
+     */
+    public function doAll()
+    {
+        foreach ($this->todo as $task) {
+            $this->do($task->id);
+        }
+    }
+    
+    /**
+     * undo a task
+     *
+     * @param string $id
+     */
+    public function undo($id)
+    {
+        // check if task exists
+        $task = $this->getTask($id);
+        $task->uncomplete();
+        $this->removeTaskFromDone($task);
+        $this->todo[] = $task;
+    }
+
+    /**
+     * undo all $done tasks
+     */
+    public function undoAll()
+    {
+        foreach ($this->done as $task) {
+            $this->undo($task->id);
+        }
+    }
     
     /**
      * edit a task
      *
      */
-    public function edit($position = null)
+    public function edit($id, $task = null)
     {
         // edit the text of the task
     }
 
     /**
-     * @param integer $position
+     * @param string $position
      */
     public function delete($position = null)
     {
@@ -181,7 +288,7 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     public function archive()
     {
         // move completed tasks to $done
-        // remove completed tasks from $tasks
+        // remove completed tasks from $todo
     }
 
     /**
@@ -193,15 +300,49 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     }
 
     /**
-     * get task at position
+     * remove a task from the $todo list
      *
-     * @param integer $position
-     * @return Task
+     * @param Task
      */
-    public function getTask($position)
+    protected function removeTaskFromTodo($task)
     {
-        $this->seek($position);
-        return $this->tasks[$position];
+        foreach ($this->todo as $key => $todo) {
+            if ($todo->id == $task->id) {
+                unset($this->todo[$key]);
+            }
+        }
+        $this->todo = array_values($this->todo);
+    }
+
+    /**
+     * remove a task from the $done list
+     *
+     * @param Task
+     */
+    protected function removeTaskFromDone($task)
+    {
+        foreach ($this->done as $key => $done) {
+            if ($done->id == $task->id) {
+                unset($this->done[$key]);
+            }
+        }
+        $this->done = array_values($this->done);
+    }
+    
+    /**
+     * get task with id
+     *
+     * @param integer $id
+     * @return Task|null
+     */
+    public function getTask($id)
+    {
+        foreach ($this->tasks as $task) {
+            if ($task->id === $id) {
+                return $task;
+            }
+        }
+        return null;
     }
     
     /**
@@ -213,29 +354,25 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     {
         return $this->tasks;
     }
-
+    
     /**
-     * @param Task $task
+     * get only open tasks
+     *
+     * @return array $todo
      */
-    protected function addProject($task)
+    public function getTodo()
     {
-        if (isset($task->projects)) {
-            foreach ($task->projects as $project) {
-                $this->projectList[] = $project;
-            }
-        }
+        return $this->todo;
     }
-
+    
     /**
-     * @param Task $task
+     * get only done tasks
+     *
+     * @return array $done
      */
-    protected function addContext($task)
+    public function getDone()
     {
-        if (isset($task->contexts)) {
-            foreach ($task->contexts as $context) {
-                $this->contextList[] = $context;
-            }
-        }
+        return $this->done;
     }
 
     /**
@@ -288,37 +425,19 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
         // filter by argument
     }
 
-    /**
-     * get only open tasks
-     *
-     *@return array $todo
-     */
-    public function getTodo()
-    {
-        return $this->todo;
-    }
-    
-    /**
-     * get done tasks, helpful to write these to a done.txt file
-     *
-     * @return array $done
-     */
-    public function getDone()
-    {
-        return $this->done;
-    }
+
 
     /**
      * @return string
      */
     public function __toString()
     {
-        $file = '';
+        $string = '';
         foreach ($this->tasks as $task) {
-            $file .= $task . self::$lineSeparator;
+            $string .= $task . self::$lineSeparator;
         }
         
-        return trim($file);
+        return trim($string);
     }
 
     // implement \ArrayAccess Interface
@@ -368,70 +487,6 @@ class TodoList implements \ArrayAccess, \Countable, \SeekableIterator, \Serializ
     public function count()
     {
         return count($this->tasks);
-    }
-
-    // implement \SeekableIterator Interface
-    /**
-     * set $position to specific task
-     *
-     * @param integer $position
-     */
-    public function seek($position)
-    {
-        $this->position = $position;
-        if (!$this->valid()) {
-            throw new \OutOfBoundsException("Cannot seek to position $position.");
-        }
-    }
-    
-    /**
-     * get task at current position
-     *
-     * @return Task $task
-     */
-    public function current()
-    {
-        return $this->tasks[$this->position];
-    }
-    
-    /**
-     * get current position
-     *
-     * @return integer
-     */
-    public function key()
-    {
-        return $this->position;
-    }
-    
-    /**
-     * forward $position by 1
-     *
-     * @return void
-     */
-    public function next()
-    {
-        ++$this->position;
-    }
-    
-    /**
-     * resets $position
-     *
-     * @return void
-     */
-    public function rewind()
-    {
-        $this->position = 0;
-    }
-    
-    /**
-     * validate is a Task is at current position
-     *
-     * @return bool
-     */
-    public function valid()
-    {
-        return isset($this->tasks[$this->position]);
     }
     
     // implement \Serializable Interface

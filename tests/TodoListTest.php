@@ -47,7 +47,6 @@ class TodoListTest extends \PHPUnit_Framework_TestCase
         $todolist->add("This is a task");
         $this->assertCount(1, $todolist->getTasks());
         $this->assertInstanceOf("TodoTxt\Task", $todolist->getTask(0));
-        $this->assertEquals((string) $todolist->getTask(0)->getTask(), "This is a task");
     }
 
 }

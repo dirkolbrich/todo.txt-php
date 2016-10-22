@@ -33,27 +33,18 @@ TodoList{
     position => $position,
     tasks(
         [0] => Task{
-            id => $id
-            raw => $raw
-            task => $task
-            creationDate => Date
-            done => bool
-            doneDate => Date
-            due => bool
-            dueDate => Date
-            priority => $prio
-            projects(
-                [0] => Project{},
-                // ...
-            )
-            contexts(
-                [0] => Context{},
-                // ...
-            )
-            metadata(
-                [0] => Metadata{},
-                // ...
-            )
+            $id string
+            $raw string
+            $task string
+            $creationDate Date
+            $complete bool
+            $completionDate Date
+            $due bool
+            $dueDate Date
+            $priority string
+            $projects array()
+            $contexts array()
+            $metadata array()
         },
         // ...
     ),
@@ -72,7 +63,8 @@ TodoList{
     projects(
         [0] => Project{
             $id
-            project
+            $project
+            $tasks array()
         },
         // ...
     ),
@@ -80,6 +72,7 @@ TodoList{
         [0] => Context{
             $id
             $context
+            $tasks array()
         },
         // ...
     ),
@@ -88,6 +81,7 @@ TodoList{
             $id
             $key
             $value
+            $tasks array()
         },
         // ...
     ),
@@ -126,8 +120,8 @@ do($task)
 doAll()
 undo($task)
 edit($task)
-append($task)
-prepend(task)
+append($task, $string)
+prepend(task, $string)
 delete($task)
 deleteAll()
 prioritize($task, $priority)
@@ -163,26 +157,25 @@ $id
 $raw
 $task
 $creationDate
-$done
-$doneDate
+$complete
+$completionDate
 $due
 $dueDate
 $priority
-$project
-$context
+$projects
+$contexts
 $metadata
 ```
 
 public methods
 
 ```php
-create()
-read()
-update($task)
-delete()
-isDone()
-do()
-undo()
+isComplete()
+getCompletionDate()
+complete()
+unComplete()
+getCreationDate()
+age()
 hasPrio()
 setPrio($priority)
 unsetPrio()
@@ -191,12 +184,15 @@ decreasePrio()
 isDue()
 setDue($dueDate)
 unsetDue()
-age()
+edit($task)
+append($string)
+prepend($string)
 ```
 
-private methods
+protected methods
 
 ```php
+createId($task)
 parse($task)
 findCompleted()
 findPriority()
@@ -205,6 +201,10 @@ findProject()
 findContext()
 findMetaData()
 findDueDate()
+addProject()
+addContext()
+addMetadata()
+rebuildRawString()
 ```
 
 ###Project.php

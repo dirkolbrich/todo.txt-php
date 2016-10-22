@@ -131,23 +131,23 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($task->isComplete());
         $this->assertNull($task->getCompletionDate());
     }
-    
+
     public function testValidPriority()
     {
         $task = new Task("(A) Important task");
-        $this->assertEquals($task->getPriority(), "A");
+        $this->assertEquals($task->getPrio(), "A");
     }
     
     public function testMulticharPriority()
     {
         $task = new Task("(AA) Important task");
-        $this->assertNull($task->getPriority());
+        $this->assertNull($task->getPrio());
     }
     
     public function testLowercasePriority()
     {
         $task = new Task("(a) Important task");
-        $this->assertNull($task->getPriority());
+        $this->assertNull($task->getPrio());
     }
 
     public function testValidProject() {
@@ -157,7 +157,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue("todo.txt-web" == $task->projects[0]->project);
     }
     
-    public function testValidProjects()
+    public function testMultipleValidProjects()
     {
         $task = new Task("Push to +todo.txt-web +open-source");
         $this->assertCount(2, $task->projects);
@@ -179,7 +179,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue("todotxt.net" == $task->contexts[0]->context);
     }
     
-    public function testValidContexts()
+    public function testMultipleValidContexts()
     {
         $task = new Task("Update @todotxt.net @github");
         $this->assertCount(2, $task->contexts);
@@ -199,16 +199,18 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $task = new Task("Essay due:today");
         $this->assertInstanceOf("TodoTxt\MetaData", $task->metadata[0]);
         $this->assertCount(1, $task->metadata);
-        $this->assertEquals($task->due, "today");
+        $this->assertEquals($task->metadata[0]->key, "due");
+        $this->assertEquals($task->metadata[0]->value, "today");
     }
     
-    public function testValidMultiMetadata()
+    public function testMultipleValidMetadata()
     {
         $task = new Task("Hello due:today when:tomorrow");
         $this->assertCount(2, $task->metadata);
-        $this->assertEquals($task->due, "today");
-        $this->assertEquals($task->when, "tomorrow");
-        $this->assertTrue($task->isDue());
+        $this->assertEquals($task->metadata[0]->key, "due");
+        $this->assertEquals($task->metadata[0]->value, "today");
+        $this->assertEquals($task->metadata[0]->key, "when");
+        $this->assertEquals($task->metadata[0]->value, "tomorrow");
     }
     
     public function testInvalidMetadataKey()
@@ -216,7 +218,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         // Test that text preceding metadata needs to be whitespace or
         // start of string (i.e. not "-").
         $task = new Task("Important essay was-due:yesterday");
-        $this->assertFalse(isset($task->due));
+        $this->assertNull($task->metadata);
     }
 
     public function testValidDue()
@@ -224,6 +226,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $task = new Task('Task with a duedate due:2015-11-20');
         $this->assertTrue($task->isDue());
         $this->assertInstanceOf("DateTime", $task->getDueDate());
+        $this->assertEquals('2015-11-20', $task->getDueDate()->format("Y-m-d"));
     }
     
     public function testValidAgeCompleted()
@@ -262,8 +265,7 @@ class TaskTest extends \PHPUnit_Framework_TestCase
     
     public function testMaximumValid()
     {
-        // The maximum valid?
-        $task = new Task("x 2011-09-11 2011-09-08 Review Tim's pull-request in +todo.txt-web on @github due:2011-09-12");
+        $task = new Task("x 2011-09-11 2011-09-08 Review Tim's pull-request in +todo.txt-web on @github due:2011-09-12 meta:data");
         $this->assertTrue($task->isComplete());
         $this->assertEquals($task->getCompletionDate()->format("Y-m-d"), "2011-09-11");
         $this->assertNull($task->getPriority());
@@ -271,9 +273,12 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($task->projects[0]->project == "todo.txt-web");
         $this->assertTrue($task->contexts[0]->context == "github");
         $this->assertTrue($task->isDue());
-        $this->assertEquals($task->due, "2011-09-12"); // @todo: plugins
+        $this->assertEquals($task->due, "2011-09-12");
+        $this->assertTrue($task->metadata[0]->key == "meta");
+        $this->assertTrue($task->metadata[0]->value == "data");
     }
-
+    
+    /** Testing completion of Task */
     public function testCompleteTask()
     {
         $task = new Task("complete this task");
@@ -291,46 +296,104 @@ class TaskTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($task->getCompletionDate());
         $this->assertEquals((string) $task, "a completed task");
     }
+    
+    /** Testing manipulation of Priority */
+    public function testHasPriority()
+    {
+        $task = new Task("(A) Important task");
+        $this->assertTrue($task->hasPrio());
+    }
+
+    public function testHasNoPriority()
+    {
+        $task = new Task("Unimportant task");
+        $this->assertFalse($task->hasPrio());
+    }
 
     public function testSetPriority()
     {
         $task = new Task('A Task needs a priority.');
-        $task->setPriority('A');
-        $this->assertEquals($task->getPriority(), 'A');
+        $task->setPrio('A');
+        $this->assertTrue($task->hasPrio());
+        $this->assertEquals($task->getPrio(), 'A');
     }
-
-    public function testInvalidPriority()
+    
+    public function testInvalidPriorityLowerCase()
     {
         $this->setExpectedException('TodoTxt\Exceptions\InvalidStringException');
         $task = new Task('A Task needs a priority.');
-        $task->setPriority('1');
+        $task->setPrio('a');
+    }
+    
+    public function testInvalidPriorityNumeric()
+    {
+        $this->setExpectedException('TodoTxt\Exceptions\InvalidStringException');
+        $task = new Task('A Task needs a priority.');
+        $task->setPrio('1');
     }
 
     public function testInvalidEmptyPriority()
     {
         $this->setExpectedException('TodoTxt\Exceptions\InvalidStringException');
         $task = new Task('A Task needs a priority.');
-        $task->setPriority('');
+        $task->setPrio('');
     }
 
     public function testUnsetPriority()
     {
         $task = new Task('(A) This task has a priority.');
-        $task->unsetPriority();
-        $this->assertNull($task->getPriority());
+        $task->unsetPrio();
+        $this->assertFalse($task->hasPrio());
+        $this->assertNull($task->getPrio());
     }
 
     public function testIncreasePriority()
     {
         $task = new Task('(B) This task has a priority.');
-        $task->increasePriority();
-        $this->assertEquals($task->getPriority(), 'A');
+        $task->increasePrio();
+        $this->assertEquals($task->getPrio(), 'A');
+    }
+
+    public function testIncreasePriorityMultiple()
+    {
+        $task = new Task('(D) This task has a priority.');
+        $task->increasePrio(3);
+        $this->assertEquals($task->getPrio(), 'A');
     }
 
     public function testDecreasePriority()
     {
         $task = new Task('(A) This task has a priority.');
-        $task->decreasePriority();
-        $this->assertEquals($task->getPriority(), 'B');
+        $task->decreasePrio();
+        $this->assertEquals($task->getPrio(), 'B');
+    }
+
+    public function testDecreasePriorityMultiple()
+    {
+        $task = new Task('(A) This task has a priority.');
+        $task->decreasePrio(3);
+        $this->assertEquals($task->getPrio(), 'D');
+    }
+
+    /** Testing editing of task */
+    public function testEditTask()
+    {
+        $task = new Task('This is a task.');
+        $task->edit('A complete new task.');
+        $this->assertEquals((string) $task, "A complete new task.");
+    }
+    
+    public function testAppendingString()
+    {
+        $task = new Task('This is a task');
+        $task->append(' with appended text.');
+        $this->assertEquals((string) $task, "This is a task with appended text.");
+    }
+    
+    public function testPrependingString()
+    {
+        $task = new Task('This is a task.');
+        $task->prepend('Prepended text to ');
+        $this->assertEquals((string) $task, "Prepended text to This is a task.");
     }
 }
