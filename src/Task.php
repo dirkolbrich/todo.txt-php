@@ -510,6 +510,16 @@ class Task
     }
 
     /**
+     * Get the id of the task
+     *
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
      * Get the remainder of the task (sans completed marker, creation date and priority)
      *
      * @return string
