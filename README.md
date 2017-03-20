@@ -1,9 +1,9 @@
-#todotxt-php
+# todotxt-php
 [![Build Status](https://travis-ci.org/dirkolbrich/todo.txt-php.svg)](https://travis-ci.org/dirkolbrich/todo.txt-php)
 
 todotxt-php is a PHP package to access, handle and validate the content of todo.txt files according to the [todo.txt specification](https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format) by Gina Trapani.
 
-##Scope
+## Scope
 
 The library will support PHP 5.6+.
 
@@ -14,9 +14,9 @@ The following features are roadmapped:
 * Ability to sort and filter the tasks.
 * Retrieve different lists for todo, done and deleted tasks as separate strings to write these back into separate files.
 
-File loading or writing is not supported. There are a lot of other packages, which handle this task better and it should be the task of the consuming app (separation of concern).
+File reading or writing is not supported. There are a lot of other packages, which handle this task better and it should be the task of the consuming app.
 
-##Quickstart
+## Quickstart
 
 ```php
 use TodoTxt;
@@ -24,10 +24,10 @@ use TodoTxt;
 // read file into string
 $file = readFile('/path/to/file.txt');
 
-$todoList = new TodoList($file);
+$todoList = new TodoTxt\TodoList($file);
 ```
 
-##Collection Structure
+## Collection Structure
 ```php
 TodoList{
     position => $position,
@@ -89,9 +89,9 @@ TodoList{
 ```
 
 
-##Function Reference
+## Function Reference
 
-###TodoList.php
+### TodoList.php
 
 variables
 
@@ -105,13 +105,17 @@ $contexts
 $metadata
 ```
 
-`__construct()`
-`static make()`
-`splitString($string)`
+methods
+
+```
+__construct()
+static make()
+splitString($string)
+```
 
 public methods
 
-```php
+```
 add($task)
 addMultiple(array $tasks)
 addDone($task)
@@ -145,10 +149,10 @@ archive()
 
 private methods
 
-```php
+```
 ```
 
-###Task.php
+### Task.php
 
 variables
 
@@ -207,7 +211,7 @@ addMetadata()
 rebuildRawString()
 ```
 
-###Project.php
+### Project.php
 
 variables
 
@@ -216,7 +220,7 @@ $id
 $project
 ```
 
-###Context.php
+### Context.php
 
 variables
 
@@ -225,7 +229,7 @@ $id
 $context
 ```
 
-###MetaData.php
+### MetaData.php
 
 variables
 
@@ -235,6 +239,6 @@ $key
 $value
 ```
 
-##Program Flow
+## Program Flow
 
 ### Initialisation
