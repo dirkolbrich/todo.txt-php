@@ -9,6 +9,14 @@ use TodoTxt\Exceptions\EmptyStringException;
  */
 class Context
 {
+
+    /**
+     * The md5 hash of the raw utf-8 encoded string
+     *
+     * @var string
+     */
+    protected $id;
+
     /**
      * @var string
      */
@@ -26,5 +34,24 @@ class Context
             throw new EmptyStringException;
         }
         $this->context = $context;
+    }
+
+    /**
+     * create the $id of the project, a md5 hash based on the utf-8 encoded raw string
+     *
+     * @param string $string
+     * @return string
+     */
+    protected function createId(string $string) {
+        return md5(utf8_encode($string));
+    }
+
+    /**
+     * get $id of this context
+     *
+     * @return string
+     */
+    public function getId() {
+        return $this->id;
     }
 }

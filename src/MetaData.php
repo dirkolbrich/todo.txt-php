@@ -11,6 +11,13 @@ use TodoTxt\Exceptions\InvalidArrayException;
 class MetaData
 {
     /**
+     * The md5 hash of the raw utf-8 encoded string
+     *
+     * @var string
+     */
+    protected $id;
+
+    /**
      * @var string
      */
     public $key;
@@ -22,8 +29,9 @@ class MetaData
 
     /**
      * Create a new metadata from the found pattern in a raw task line.
+     *
      * @param array $metadata
-     * @throws EmptyArrayException When $metadata is an empty array
+     * @throws EmptyArrayException - When $metadata is an empty array
      */
     public function __construct(array $metadata)
     {
@@ -34,7 +42,28 @@ class MetaData
         if (count($metadata) !== 3) {
             throw new InvalidArrayException;
         }
-        $this->key = $metadata[1];
-        $this->value = $metadata[2];        
+
+        $this->id = $this->createId($metadata['full']);
+        $this->key = $metadata['key'];
+        $this->value = $metadata['value'];
+    }
+
+    /**
+     * create the $id of the metadata, a md5 hash based on the utf-8 encoded raw string
+     *
+     * @param string $string
+     * @return string
+     */
+    protected function createId(string $string) {
+        return md5(utf8_encode($string));
+    }
+
+   /**
+     * get $id of this metadata
+     *
+     * @return string
+     */
+    public function getId() {
+        return $this->id;
     }
 }
