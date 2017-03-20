@@ -11,11 +11,11 @@ class MetaDataTest extends \PHPUnit_Framework_TestCase
      */
     public function testStandard()
     {
-        $metadata = new MetaData(array('key:value', 'key', 'value'));
+        $metadata = new MetaData(array('full' => 'key:value', 'key' => 'key', 'value' => 'value'));
         $this->assertEquals($metadata->key, "key");
         $this->assertEquals($metadata->value, "value");
     }
-    
+
     public function testEmptyArray()
     {
         // Empty array
@@ -26,8 +26,13 @@ class MetaDataTest extends \PHPUnit_Framework_TestCase
     public function testInvalidArray()
     {
         // Invalid array
-        $this->setExpectedException('TodoTxt\Exceptions\INvalidArrayException');
-        $metadata = new MetaData(array('key:value'));
+        $this->setExpectedException('TodoTxt\Exceptions\InvalidArrayException');
+        $metadata = new MetaData(array('full' => 'key:value'));
     }
 
+    public function testValidId()
+    {
+        $metadata = new MetaData(array('full' => 'key:value', 'key' => 'key', 'value' => 'value'));
+        $this->assertEquals($metadata->getId(), md5(utf8_encode('key:value')));
+    }
 }

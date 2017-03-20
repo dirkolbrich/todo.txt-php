@@ -2,6 +2,9 @@
 
 namespace TodoTxt;
 
+use TodoTxt\Context;
+use TodoTxt\MetaData;
+use TodoTxt\Project;
 use TodoTxt\Exceptions\EmptyTaskException;
 use TodoTxt\Exceptions\EmptyStringException;
 use TodoTxt\Exceptions\InvalidStringException;
@@ -38,9 +41,9 @@ class Task
       /**
      * The date the task was created
      *
-     * @var \DateTime
+     * @var \DateTime|null
      */
-    protected $creationDate;
+    protected $creationDate = null;
 
     /**
      * @var bool
@@ -51,11 +54,13 @@ class Task
      *
      * The date the task is completed
      *
-     * @var \DateTime
+     * @var \DateTime|null
      */
-    protected $completionDate;
+    protected $completionDate = null;
 
     /**
+     * indicates if a task is due
+     *
      * @var bool
      */
     protected $due = false;
@@ -65,35 +70,35 @@ class Task
      *
      * @var \DateTime
      */
-    protected $dueDate;
+    protected $dueDate = null;
 
     /**
      * A single-character, uppercase priority, if found
      *
      * @var string
      */
-    protected $priority;
-        
+    protected $priority = null;
+
     /**
      * A list of project names found (case-sensitive)
      *
      * @var array
      */
-    public $projects = array();
-    
+    public $projects = [];
+
     /**
      * A list of context names found (case-sensitive)
      *
      * @var array
      */
-    public $contexts = array();
+    public $contexts = [];
 
     /**
      * A map of meta-data, contained in the task
      *
      * @var array
      */
-    public $metadata = array();
+    public $metadata = [];
 
     /**
      * Create a new task from a raw line held in a todo.txt file.
@@ -101,26 +106,26 @@ class Task
      * @param string $string A raw task line
      * @throws \EmptyStringException When $task is an empty string (or whitespace)
      */
-    public function __construct($string)
+    public function __construct(string $string)
     {
         $this->id = $this->createId($string);
-        
+
         $task = trim($string);
         if (strlen($task) == 0) {
             throw new EmptyStringException;
         }
         $this->parse($task);
     }
-    
+
     /**
-     * create the $id of the task, md5 hash based on the utf-8 encoded raw string
+     * create the $id of the task, a md5 hash based on the utf-8 encoded raw string
      *
      * @param string $string
      * @return string
      */
-    protected function createId($string) {
+    protected function createId(string $string) {
         return md5(utf8_encode($string));
-    } 
+    }
 
     /**
      * Parse the raw task string into its components
@@ -128,23 +133,23 @@ class Task
      * @param string $task
      * @throws EmptyTaskException
      */
-    protected function parse($task)
+    protected function parse(string $task)
     {
         $this->raw = $task;
-        
+
         // Since each of these parts can occur sequentially and only at
         // the start of the string, pass the remainder of the task on.
         $result = $this->findCompleted($task);
         $result = $this->findPriority($result);
         $result = $this->findCreated($result);
-        
+
         // validate rest of string if task exists
         $result = trim($result);
         if (strlen($result) == 0) {
             throw new EmptyTaskException;
         }
         $this->task = $result;
-        
+
         // Find metadata held in the rest of the task
         $this->findProject($result);
         $this->findContext($result);
@@ -162,7 +167,7 @@ class Task
      * @param string $input String to check for completion.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findCompleted($input)
+    protected function findCompleted(string $input)
     {
         // Match a lower or uppercase X, followed by a space and a
         // YYYY-MM-DD formatted date, followed by another space.
@@ -176,10 +181,11 @@ class Task
             } catch (\Exception $e) {
                 return $input;
             }
-            
+
             $this->complete = true;
             return substr($input, strlen($matches[0]));
         }
+
         return $input;
     }
 
@@ -190,7 +196,7 @@ class Task
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findPriority($input)
+    protected function findPriority(string $input)
     {
         // Match one uppercase letter in brackers, followed by a space.
         $pattern = "/^\(([A-Z])\) /";
@@ -198,6 +204,7 @@ class Task
             $this->priority = $matches[1];
             return substr($input, strlen($matches[0]));
         }
+
         return $input;
     }
 
@@ -207,7 +214,7 @@ class Task
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findCreated($input)
+    protected function findCreated(string $input)
     {
         // Match a YYYY-MM-DD formatted date, followed by a space.
         // Invalid dates can be caught but checked after.
@@ -221,6 +228,7 @@ class Task
             }
             return substr($input, strlen($matches[0]));
         }
+
         return $input;
     }
 
@@ -229,7 +237,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findProject($input)
+    protected function findProject(string $input)
     {
         // Match an + sign, any non-whitespace character, ending with
         // an alphanumeric or underscore, followed either by the end of
@@ -245,7 +253,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findContext($input)
+    protected function findContext(string $input)
     {
         // Match an at-sign, any non-whitespace character, ending with
         // an alphanumeric or underscore, followed either by the end of
@@ -263,11 +271,11 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findMetadata($input)
+    protected function findMetadata(string $input)
     {
         // Match a word (alphanumeric+underscores), a colon, followed by
         // any non-whitespace character.
-        $pattern = "/(?P<key>\w+):(?P<value>\S+)(?=\s|$)/";
+        $pattern = "/(?<=\s|^)(?P<key>\w+):(?P<value>\S+)(?=\s|$)/";
         if (preg_match_all($pattern, $input, $matches, PREG_SET_ORDER) > 0) {
             $this->addMetadata($matches);
         }
@@ -299,11 +307,12 @@ class Task
     {
         $projects = array_map("trim", $projects);
         foreach ($projects as $project) {
-            $this->projects[] = $project;
+            $this->projects[] = new Project($project);
         }
-        $this->projects = array_unique(array_merge($this->projects, $projects));
+
+        $this->projects = array_unique($this->projects, SORT_REGULAR);
     }
-    
+
     /**
      * Add an array of contexts to the list.
      * Using this method will prevent duplication in the array.
@@ -314,20 +323,27 @@ class Task
     {
         $contexts = array_map("trim", $contexts);
         foreach ($contexts as $context) {
-            $this->contexts[] = $context;
+            $this->contexts[] = new Context($context);
         }
-        $this->contexts = array_unique(array_merge($this->contexts, $contexts));
+        $this->contexts = array_unique($this->contexts, SORT_REGULAR);
     }
 
     /**
      * Add an array of metadata to the list.
      *
-     * @param array $metadatas - Array of metadata keys and values.
+     * @param array $regexMatches - Array of metadata keys and values.
      */
-    protected function addMetadata(array $metadatas)
+    protected function addMetadata(array $regexMatches)
     {
-        foreach ($metadatas as $metadata) {
-            $this->metadata[$metadata['key']] = $metadata['value'];
+        foreach ($regexMatches as $match) {
+            $metadata = [
+            'full'  => $match[0],
+            'key'   => $match['key'],
+            'value' => $match['value'],
+            ];
+
+            $md = new MetaData($metadata);
+            $this->metadata[] = $md;
         }
     }
 
@@ -363,9 +379,10 @@ class Task
     public function uncomplete()
     {
         $this->complete = false;
+        $this->completionDate = null;
         $this->raw = $this->rebuildRawString();
     }
-    
+
     /**
      * @return \DateTime|null
      */
@@ -380,6 +397,7 @@ class Task
      * @param \DateTime|string $endDate  - The end-date to use if the task
      * does not have a completion date. If this is null and the task
      * doesn't have a completion date the current date will be used.
+     *
      * @return \DateInterval  - the age of the task.
      * @throws \CannotCalculateAgeException - If the task does not have a creation date
      * @throws \CompletionParadoxException - If the task is completed before the creation date
@@ -389,7 +407,7 @@ class Task
         if (!isset($this->creationDate)) {
             throw new CannotCalculateAgeException;
         }
-        
+
         // Decide on an end-date to use - completionDate, then a
         // provided date, then the current date.
         $end = new \DateTime('now');
@@ -401,12 +419,12 @@ class Task
             }
             $end = $endDate;
         }
-        
+
         $diff = $this->creationDate->diff($end);
         if ($diff->invert) {
             throw new CompletionParadoxException;
         }
-        
+
         return $diff;
     }
 
@@ -418,6 +436,7 @@ class Task
         if (isset($this->priority)) {
             return true;
         }
+
         return false;
     }
 
@@ -435,9 +454,9 @@ class Task
      * @param string $priority
      * @throws InvalidStringException
      */
-    public function setPrio($priority)
+    public function setPrio(string $priority)
     {
-        if (!ctype_alpha($priority) && !ctype_upper($priority)) {
+        if (!ctype_alpha($priority) || !ctype_upper($priority)) {
             throw new InvalidStringException;
         }
         $this->priority = $priority;
@@ -458,18 +477,20 @@ class Task
      *
      * @param integer $step
      */
-    public function increasePrio($step = 1)
+    public function increasePrio(int $step = 1)
     {
+        // if Priority already at highest
+        if ($this->priority === 'A') {
+            return;
+        }
+
         // get $priority and set it one higher
         do {
-            // if Priority already at highest
-            if ($this->priority === 'A') {
-                return;
-            }
-            ++$this->priority;
-            $step--;
+            // decrementing character is not implemented in PHP
+            $this->priority = chr(ord($this->priority) - 1);
+            --$step;
         } while ($step > 0);
-        
+
         $this->raw = $this->rebuildRawString();
     }
 
@@ -478,18 +499,19 @@ class Task
      *
      * @param integer $step
      */
-    public function decreasePrio($step = 1)
+    public function decreasePrio(int $step = 1)
     {
+        // if Priority already at lowest
+        if ($this->priority === 'Z') {
+            return;
+        }
+
         // get $priority and set it one higher
         do {
-            // if Priority already at lowest
-            if ($this->priority === 'Z') {
-                return;
-            }
-            --$this->priority;
-            $step--;
+            ++$this->priority;
+            --$step;
         } while ($step > 0);
-        
+
         $this->raw = $this->rebuildRawString();
     }
 
@@ -500,7 +522,7 @@ class Task
     {
         return $this->due;
     }
-    
+
     /**
      * @return \DateTime
      */
@@ -542,7 +564,7 @@ class Task
         }
         $this->parse($task);
     }
-    
+
     /**
      * append $string to end of task
      *
@@ -555,7 +577,7 @@ class Task
         $this->findContext($string);
         $this->findMetadata($string);
         $this->findDue($string);
-        
+
         $this->task .= $string;
         $this->raw = $this->rebuildRawString();
     }
@@ -572,7 +594,7 @@ class Task
         $this->findContext($string);
         $this->findMetadata($string);
         $this->findDue($string);
-        
+
         $this->task = $string . $this->task;
         $this->raw = $this->rebuildRawString();
     }
@@ -588,20 +610,20 @@ class Task
         if ($this->isComplete()) {
             $raw .= sprintf('x %s ', $this->completionDate->format("Y-m-d"));
         }
-        
+
         if (isset($this->priority)) {
             $raw .= sprintf('(%s) ', strtoupper($this->priority));
         }
-        
+
         if (isset($this->creationDate)) {
             $raw .= sprintf('%s ', $this->creationDate->format("Y-m-d"));
         }
-        
+
         $raw .= $this->task;
 
         return $raw;
     }
-    
+
     /**
      * Re-build the task string.
      *
@@ -610,6 +632,7 @@ class Task
     public function __toString()
     {
         $task = $this->rebuildRawString();
+
         return $task;
     }
 }

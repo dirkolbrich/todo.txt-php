@@ -2,6 +2,7 @@
 
 namespace TodoTxt\Tests;
 
+use TodoTxt\Task;
 use TodoTxt\TodoList;
 
 class TodoListTest extends \PHPUnit_Framework_TestCase
@@ -39,14 +40,37 @@ class TodoListTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Test simple tasks, whitespace trimming and a few edge cases
+     * Test adding a simple tasks
      */
-    public function testAdd()
+    public function testAddWithClass()
+    {
+        $task = new Task("This is a task");
+        $todolist = new TodoList();
+        $todolist->addTask($task);
+        $this->assertCount(1, $todolist->getTasks());
+        $this->assertInstanceOf("TodoTxt\Task", $todolist->getTasks()[0]);
+    }
+
+    /**
+     * Test adding a simple tasks
+     */
+    public function testAddWithString()
     {
         $todolist = new TodoList();
         $todolist->addTask("This is a task");
         $this->assertCount(1, $todolist->getTasks());
-        $this->assertInstanceOf("TodoTxt\Task", $todolist->getTask(0));
+        $this->assertInstanceOf("TodoTxt\Task", $todolist->getTasks()[0]);
+    }
+
+    /**
+     * Test adding multiple mixed tasks
+     */
+    public function testAddMultipleMixed()
+    {
+        $task = new Task("This is a task");
+        $todolist = new TodoList();
+        $todolist->addMultiple(array($task, 'Another task'));
+        $this->assertCount(2, $todolist->getTasks());
     }
 
 }
