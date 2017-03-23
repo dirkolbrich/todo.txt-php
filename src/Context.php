@@ -42,7 +42,7 @@ class Context
      * @param string $string
      * @return string
      */
-    protected function createId(string $string) {
+    protected function createId($string) {
         return md5(utf8_encode($string));
     }
 

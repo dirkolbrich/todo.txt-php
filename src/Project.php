@@ -27,7 +27,7 @@ class Project
      * @param string $project A raw task line
      * @throws EmptyStringException when $project is an empty string (or whitespace)
      */
-    public function __construct(string $project)
+    public function __construct($project)
     {
         $project = trim($project);
         if (strlen($project) == 0) {
@@ -44,7 +44,7 @@ class Project
      * @param string $string
      * @return string
      */
-    protected function createId(string $string) {
+    protected function createId($string) {
         return md5(utf8_encode($string));
     }
 

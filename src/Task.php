@@ -106,7 +106,7 @@ class Task
      * @param string $string A raw task line
      * @throws \EmptyStringException When $task is an empty string (or whitespace)
      */
-    public function __construct(string $string)
+    public function __construct($string)
     {
         $this->id = $this->createId($string);
 
@@ -123,7 +123,7 @@ class Task
      * @param string $string
      * @return string
      */
-    protected function createId(string $string) {
+    protected function createId($string) {
         return md5(utf8_encode($string));
     }
 
@@ -133,7 +133,7 @@ class Task
      * @param string $task
      * @throws EmptyTaskException
      */
-    protected function parse(string $task)
+    protected function parse($task)
     {
         $this->raw = $task;
 
@@ -167,7 +167,7 @@ class Task
      * @param string $input String to check for completion.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findCompleted(string $input)
+    protected function findCompleted($input)
     {
         // Match a lower or uppercase X, followed by a space and a
         // YYYY-MM-DD formatted date, followed by another space.
@@ -196,7 +196,7 @@ class Task
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findPriority(string $input)
+    protected function findPriority($input)
     {
         // Match one uppercase letter in brackers, followed by a space.
         $pattern = "/^\(([A-Z])\) /";
@@ -214,7 +214,7 @@ class Task
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findCreated(string $input)
+    protected function findCreated($input)
     {
         // Match a YYYY-MM-DD formatted date, followed by a space.
         // Invalid dates can be caught but checked after.
@@ -237,7 +237,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findProject(string $input)
+    protected function findProject($input)
     {
         // Match an + sign, any non-whitespace character, ending with
         // an alphanumeric or underscore, followed either by the end of
@@ -253,7 +253,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findContext(string $input)
+    protected function findContext($input)
     {
         // Match an at-sign, any non-whitespace character, ending with
         // an alphanumeric or underscore, followed either by the end of
@@ -271,7 +271,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findMetadata(string $input)
+    protected function findMetadata($input)
     {
         // Match a word (alphanumeric+underscores), a colon, followed by
         // any non-whitespace character.
@@ -454,7 +454,7 @@ class Task
      * @param string $priority
      * @throws InvalidStringException
      */
-    public function setPrio(string $priority)
+    public function setPrio($priority)
     {
         if (!ctype_alpha($priority) || !ctype_upper($priority)) {
             throw new InvalidStringException;
@@ -477,7 +477,7 @@ class Task
      *
      * @param integer $step
      */
-    public function increasePrio(int $step = 1)
+    public function increasePrio($step = 1)
     {
         // if Priority already at highest
         if ($this->priority === 'A') {
@@ -499,7 +499,7 @@ class Task
      *
      * @param integer $step
      */
-    public function decreasePrio(int $step = 1)
+    public function decreasePrio($step = 1)
     {
         // if Priority already at lowest
         if ($this->priority === 'Z') {
