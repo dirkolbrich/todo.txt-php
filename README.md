@@ -5,7 +5,7 @@ todotxt-php is a PHP package to access, handle and validate the content of todo.
 
 ## Scope
 
-The library will support PHP 5.6+.
+The library will support PHP 7.0+.
 
 The following features are roadmapped:
 

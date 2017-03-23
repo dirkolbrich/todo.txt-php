@@ -55,7 +55,8 @@ class MetaData
      * @param string $string
      * @return string
      */
-    protected function createId($string) {
+    protected function createId(string $string): string
+    {
         return md5(utf8_encode($string));
     }
 
@@ -64,7 +65,8 @@ class MetaData
      *
      * @return string
      */
-    public function getId() {
+    public function getId(): string
+    {
         return $this->id;
     }
 }

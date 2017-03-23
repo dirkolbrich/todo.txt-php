@@ -90,7 +90,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param mixed $input
      * @return TodoList
      */
-    public static function make($input = null)
+    public static function make($input = null): TodoList
     {
         return new static($input);
     }
@@ -101,7 +101,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param string $string A newline-separated string of tasks.
      * @return array $lines
      */
-    protected function split($string)
+    protected function split(string $string): array
     {
         $lines = [];
 
@@ -121,7 +121,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param mixed $task
      * @return Task
      */
-    public function addTask($task)
+    public function addTask($task): Task
     {
         if (!($task instanceof Task)) {
             $task = new Task((string) $task);
@@ -170,7 +170,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param mixed $task
      * @param string @priority
      */
-    public function addPriority($task, $priority)
+    public function addPriority($task, string $priority)
     {
         $task = $this->addTask($task);
         $task->setPrio($priority);
@@ -224,7 +224,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param string $id
      * @return Task|null
      */
-    public function getTask($id)
+    public function getTask(string $id)
     {
         foreach ($this->tasks as $task) {
             if ($task->getId() === $id) {
@@ -240,7 +240,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @return array $tasks
      */
-    public function getTasks()
+    public function getTasks(): array
     {
         return $this->tasks;
     }
@@ -250,7 +250,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    public function doTask($id)
+    public function doTask(string $id)
     {
         // check if task exists
         $task = $this->getTask($id);
@@ -274,7 +274,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    public function undoTask($id)
+    public function undoTask(string $id)
     {
         // check if task exists
         $task = $this->getTask($id);
@@ -299,7 +299,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param string $id
      * @return Task|null
      */
-    public function editTask($id)
+    public function editTask(string $id)
     {
         // edit the text of the task
         // return new task
@@ -310,7 +310,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    public function deleteTask($id)
+    public function deleteTask(string $id)
     {
         // validate existinence of task
         // delete Task
@@ -340,7 +340,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    protected function removeTaskFromTodo($id)
+    protected function removeTaskFromTodo(string $id)
     {
         foreach ($this->todo as $key => $todo) {
             if ($todo->getId() === $id) {
@@ -355,7 +355,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @param string $id
      */
-    protected function removeTaskFromDone($id)
+    protected function removeTaskFromDone(string $id)
     {
         foreach ($this->done as $key => $done) {
             if ($done->getId() === $id) {
@@ -370,7 +370,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @return array $todo
      */
-    public function getTodo()
+    public function getTodo(): array
     {
         return $this->todo;
     }
@@ -380,7 +380,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @return array $done
      */
-    public function getDone()
+    public function getDone(): array
     {
         return $this->done;
     }
@@ -393,7 +393,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
         // sort standard
     }
 
-    public function sortBy($arg)
+    public function sortBy(string $arg)
     {
         // sort by argument
     }
@@ -401,7 +401,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * @param string $priority
      */
-    public function sortByPriority($priority = null)
+    public function sortByPriority(string $priority = null)
     {
         // sort by $priority, case in-sensitive
     }
@@ -409,7 +409,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * @param string $project
      */
-    public function sortByProject($project = null)
+    public function sortByProject(string $project = null)
     {
         // sort by project, standard alphabetical or via specific project
     }
@@ -417,7 +417,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * @param string $context
      */
-    public function sortByContext($context = null)
+    public function sortByContext(string $context = null)
     {
         // sort by context, standard alphabetical or via specific context
     }
@@ -425,12 +425,12 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * @param string $metadata
      */
-    public function sortByMetaData($metadata = null)
+    public function sortByMetaData(string $metadata = null)
     {
         // sort by metadata, standard alphabetical or via specific metadata
     }
 
-    public function filterBy($arg)
+    public function filterBy(string $arg)
     {
         // filter by argument
     }
@@ -438,7 +438,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         $string = '';
         foreach ($this->tasks as $task) {
@@ -455,7 +455,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      * @param integer $offset
      * @return bool
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return isset($this->tasks[$offset]);
     }
@@ -492,7 +492,7 @@ class TodoList implements \ArrayAccess, \Countable, \Serializable
      *
      * @return integer
      */
-    public function count()
+    public function count(): int
     {
         return count($this->tasks);
     }

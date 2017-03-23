@@ -28,7 +28,7 @@ class Context
      * @param string $context A raw task line
      * @throws EmptyStringException When $project is an empty string (or whitespace)
      */
-    public function __construct($context)
+    public function __construct(string $context)
     {
         $context = trim($context);
         if (strlen($context) == 0) {
@@ -43,7 +43,8 @@ class Context
      * @param string $string
      * @return string
      */
-    protected function createId($string) {
+    protected function createId(string $string): string
+    {
         return md5(utf8_encode($string));
     }
 
@@ -52,7 +53,8 @@ class Context
      *
      * @return string
      */
-    public function getId() {
+    public function getId(): string
+    {
         return $this->id;
     }
 }

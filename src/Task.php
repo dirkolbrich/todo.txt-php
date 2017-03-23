@@ -107,7 +107,7 @@ class Task
      * @param string $string A raw task line
      * @throws \EmptyStringException When $task is an empty string (or whitespace)
      */
-    public function __construct($string)
+    public function __construct(string $string)
     {
         $this->id = $this->createId($string);
 
@@ -124,7 +124,7 @@ class Task
      * @param string $string
      * @return string
      */
-    protected function createId($string) {
+    protected function createId(string $string): string {
         return md5(utf8_encode($string));
     }
 
@@ -134,7 +134,7 @@ class Task
      * @param string $task
      * @throws EmptyTaskException
      */
-    protected function parse($task)
+    protected function parse(string $task)
     {
         $this->raw = $task;
 
@@ -168,7 +168,7 @@ class Task
      * @param string $input String to check for completion.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findCompleted($input)
+    protected function findCompleted(string $input): string
     {
         // Match a lower or uppercase X, followed by a space and a
         // YYYY-MM-DD formatted date, followed by another space.
@@ -197,7 +197,7 @@ class Task
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findPriority($input)
+    protected function findPriority(string $input): string
     {
         // Match one uppercase letter in brackers, followed by a space.
         $pattern = "/^\(([A-Z])\) /";
@@ -215,7 +215,7 @@ class Task
      * @param string $input Input string to check.
      * @return string Returns the rest of the task, without this part.
      */
-    protected function findCreated($input)
+    protected function findCreated(string $input): string
     {
         // Match a YYYY-MM-DD formatted date, followed by a space.
         // Invalid dates can be caught but checked after.
@@ -238,7 +238,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findProject($input)
+    protected function findProject(string $input)
     {
         // Match an + sign, any non-whitespace character, ending with
         // an alphanumeric or underscore, followed either by the end of
@@ -254,7 +254,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findContext($input)
+    protected function findContext(string $input)
     {
         // Match an at-sign, any non-whitespace character, ending with
         // an alphanumeric or underscore, followed either by the end of
@@ -272,7 +272,7 @@ class Task
      *
      * @param string $input Input string to check
      */
-    protected function findMetadata($input)
+    protected function findMetadata(string $input)
     {
         // Match a word (alphanumeric+underscores), a colon, followed by
         // any non-whitespace character.
@@ -351,7 +351,7 @@ class Task
     /**
      * @return bool
      */
-    public function isComplete()
+    public function isComplete(): bool
     {
         return $this->complete;
     }
@@ -432,7 +432,7 @@ class Task
     /**
      * @return bool
      */
-    public function hasPrio()
+    public function hasPrio(): bool
     {
         if (isset($this->priority)) {
             return true;
@@ -442,7 +442,7 @@ class Task
     }
 
     /**
-     * @return string
+     * @return string||null
      */
     public function getPrio()
     {
@@ -455,7 +455,7 @@ class Task
      * @param string $priority
      * @throws InvalidStringException
      */
-    public function setPrio($priority)
+    public function setPrio(string $priority)
     {
         if (!ctype_alpha($priority) || !ctype_upper($priority)) {
             throw new InvalidStringException;
@@ -478,7 +478,7 @@ class Task
      *
      * @param integer $step
      */
-    public function increasePrio($step = 1)
+    public function increasePrio(int $step = 1)
     {
         // if Priority already at highest
         if ($this->priority === 'A') {
@@ -500,7 +500,7 @@ class Task
      *
      * @param integer $step
      */
-    public function decreasePrio($step = 1)
+    public function decreasePrio(int $step = 1)
     {
         // if Priority already at lowest
         if ($this->priority === 'Z') {
@@ -519,7 +519,7 @@ class Task
     /**
      * @return bool
      */
-    public function isDue()
+    public function isDue(): bool
     {
         return $this->due;
     }
@@ -537,7 +537,7 @@ class Task
      *
      * @return string
      */
-    public function getId()
+    public function getId(): string
     {
         return $this->id;
     }
@@ -547,7 +547,7 @@ class Task
      *
      * @return string
      */
-    public function getTask()
+    public function getTask(): string
     {
         return $this->task;
     }
@@ -556,8 +556,9 @@ class Task
      * edit the complete task
      *
      * @param string $string
+     * @throws EmptyStringException
      */
-    public function edit($string)
+    public function edit(string $string)
     {
         $task = trim($string);
         if (strlen($task) == 0) {
@@ -571,7 +572,7 @@ class Task
      *
      * @param string $string
      */
-    public function append($string)
+    public function append(string $string)
     {
         // Find metadata held in the appended string
         $this->findProject($string);
@@ -588,7 +589,7 @@ class Task
      *
      * @param string $string
      */
-    public function prepend($string)
+    public function prepend(string $string)
     {
         // Find metadata held in the prepended string
         $this->findProject($string);
@@ -605,7 +606,7 @@ class Task
      *
      * @return string The task as a todo.txt line.
      */
-    public function rebuildRawString()
+    public function rebuildRawString(): string
     {
         $raw = '';
         if ($this->isComplete()) {
@@ -630,7 +631,7 @@ class Task
      *
      * @return string - The task as a todo.txt line.
      */
-    public function __toString()
+    public function __toString(): string
     {
         $task = $this->rebuildRawString();
 
