@@ -1,10 +1,14 @@
 <?php
+declare(strict_types=1);
 
 namespace TodoTxt\Tests;
 
 use TodoTxt\MetaData;
+use TodoTxt\Exceptions;
+use PHPUnit\Framework\TestCase;
 
-class MetaDataTest extends \PHPUnit_Framework_TestCase
+
+class MetaDataTest extends TestCase
 {
     /**
      * Test simple metadata
@@ -19,14 +23,14 @@ class MetaDataTest extends \PHPUnit_Framework_TestCase
     public function testEmptyArray()
     {
         // Empty array
-        $this->setExpectedException('TodoTxt\Exceptions\EmptyArrayException');
+        $this->expectException(Exceptions\EmptyArrayException::class);
         $metadata = new MetaData(array());
     }
 
     public function testInvalidArray()
     {
         // Invalid array
-        $this->setExpectedException('TodoTxt\Exceptions\InvalidArrayException');
+        $this->expectException(Exceptions\InvalidArrayException::class);
         $metadata = new MetaData(array('full' => 'key:value'));
     }
 

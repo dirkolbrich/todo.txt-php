@@ -1,10 +1,13 @@
 <?php
+declare(strict_types=1);
 
 namespace TodoTxt\Tests;
 
 use TodoTxt\Context;
+use TodoTxt\Exceptions;
+use PHPUnit\Framework\TestCase;
 
-class ContextTest extends \PHPUnit_Framework_TestCase
+class ContextTest extends TestCase
 {
     /**
      * Test simple tasks, whitespace trimming and a few edge cases
@@ -14,11 +17,11 @@ class ContextTest extends \PHPUnit_Framework_TestCase
         $context = new Context("context");
         $this->assertEquals($context->context, "context");
     }
-    
+
     public function testEmpty()
     {
         // Empty string
-        $this->setExpectedException('TodoTxt\Exceptions\EmptyStringException');
+        $this->expectException(Exceptions\EmptyStringException::class);
         $context = new Context("");
     }
 }

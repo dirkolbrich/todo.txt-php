@@ -1,5 +1,5 @@
 # todotxt-php
-[![Build Status](https://travis-ci.org/dirkolbrich/todo.txt-php.svg)](https://travis-ci.org/dirkolbrich/todo.txt-php)
+[![Build Status](https://travis-ci.org/dirkolbrich/todotxt-php.svg)](https://travis-ci.org/dirkolbrich/todotxt-php)
 
 todotxt-php is a PHP package to access, handle and validate the content of todo.txt files according to the [todo.txt specification](https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format) by Gina Trapani.
 
@@ -31,7 +31,7 @@ $todoList = new TodoTxt\TodoList($file);
 ```php
 TodoList{
     position => $position,
-    tasks(
+    tasks => array(
         [0] => Task{
             $id string
             $raw string
@@ -42,54 +42,87 @@ TodoList{
             $due bool
             $dueDate Date
             $priority string
-            $projects array()
-            $contexts array()
-            $metadata array()
+            $projects array([0] => Project, ...)
+            $contexts array([0] => Context, ...)
+            $metadata array([0] => MetaData, ...)
         },
         // ...
     ),
-    todo(
+    todo => array(
         [0] => Task{
             // ...
         },
         // ...
     ),
-    done(
+    done => array(
         [0] => Task{
             // ...
         },
         // ...
     ),
-    projects(
+    projects => array(
         [0] => Project{
             $id
             $project
-            $tasks array()
+            $tasks array([0] => Task, ...)
         },
         // ...
     ),
-    contexts(
+    contexts => array(
         [0] => Context{
             $id
             $context
-            $tasks array()
+            $tasks array([0] => Task, ...)
         },
         // ...
     ),
-    metadata(
+    metadata => array(
         [0] => Metadata{
             $id
             $key
             $value
-            $tasks array()
+            $tasks array([0] => Task, ...)
         },
         // ...
     ),
 };
 ```
 
-
 ## Function Reference
+
+### `add($task)`
+
+add a task to the list, add to $todo array, add projects, contexts and metadata to corresponding arrays
+
+### `addMultiple($task)`
+
+add multiple tasks to the list, add to $todo array, add projects, contexts and metadata to corresponding arrays
+
+### `addDone($task)`
+
+add a task to the list, mark as done, add to $done array, add projects, contexts and metadata to corresponding arrays
+
+### `addPriority($task, $priority)`
+
+add a task to the list, set a priority, add to $todo array, add projects, contexts and metadata to corresponding arrays
+
+### `do($taskId)`
+
+mark a task as done, remove from $todo array, move to $done array
+
+### `undo($taskId)`
+
+mark a task as open, remove from $done array, move to $todo array
+
+### `due($taskId, $date)`
+
+set a `due:date` metadata to a task, add metadata to corresponding array
+
+### `undue($taskId)`
+
+remove a `due:date` metadata from a task, remove metadata from corresponding array
+
+## Classes Reference
 
 ### TodoList.php
 
@@ -131,6 +164,8 @@ deleteAll()
 prioritize($task, $priority)
 unprioritize($task)
 deprioritize($task)
+due($task)
+undue($task)
 list($term, $negate)
 listAll($term, $negate)
 listPrio($priority, $negate)

@@ -1,10 +1,14 @@
 <?php
+declare(strict_types=1);
 
 namespace TodoTxt\Tests;
 
 use TodoTxt\Project;
+use TodoTxt\Exceptions;
+use PHPUnit\Framework\TestCase;
 
-class ProjectTest extends \PHPUnit_Framework_TestCase
+
+class ProjectTest extends TestCase
 {
     /**
      * Test simple tasks, whitespace trimming and a few edge cases
@@ -14,11 +18,11 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
         $project = new Project("project");
         $this->assertEquals($project->project, "project");
     }
-    
+
     public function testEmpty()
     {
         // Empty string
-        $this->setExpectedException('TodoTxt\Exceptions\EmptyStringException');
+        $this->expectException(Exceptions\EmptyStringException::class);
         $project = new Project("");
     }
 }

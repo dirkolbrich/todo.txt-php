@@ -1,11 +1,14 @@
 <?php
+declare(strict_types=1);
 
 namespace TodoTxt\Tests;
 
 use TodoTxt\Task;
 use TodoTxt\TodoList;
+use PHPUnit\Framework\TestCase;
 
-class TodoListTest extends \PHPUnit_Framework_TestCase
+
+class TodoListTest extends TestCase
 {
     /**
      * Test Todolist instantiation single string input
