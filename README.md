@@ -10,9 +10,10 @@ The library will support PHP 7.0+.
 The following features are roadmapped:
 
 * Parsing a line separated string into a list, presented as a collection.
-* Full unit-testing.
 * Ability to sort and filter the tasks.
 * Retrieve different lists for todo, done and deleted tasks as separate strings to write these back into separate files.
+* Full unit-testing.
+* Fully documented.
 
 File reading or writing is not supported. There are a lot of other packages, which handle this task better and it should be the task of the consuming app.
 

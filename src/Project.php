@@ -15,12 +15,12 @@ class Project
      *
      * @var string
      */
-    protected $id;
+    protected $id = '';
 
     /**
      * @var string
      */
-    public $project;
+    protected $name = '';
 
     /**
      * Create a new project from a raw line held in a todo.txt file.
@@ -28,15 +28,62 @@ class Project
      * @param string $project A raw task line
      * @throws EmptyStringException when $project is an empty string (or whitespace)
      */
-    public function __construct(string $project)
+    public function __construct(string $string = null)
     {
-        $project = trim($project);
-        if (strlen($project) == 0) {
-            throw new EmptyStringException;
+        if (!is_null($string)) {
+            $string = $this->validateString($string);
+            $this->id = $this->createId($string);
+            $this->name = $string;
         }
+    }
 
-        $this->id = $this->createId($project);
-        $this->project = $project;
+    /**
+     * static constructor function
+     *
+     * @param string $string - a string representing the name of a project
+     * @return self
+     */
+    public static function withString(string $string): self
+    {
+        $project = new Project();
+
+        $string = $project->validateString($string);
+        $project->id = $project->createId($string);
+        $project->name = $string;
+
+        return $project;
+    }
+
+    /**
+     * get $id of this project
+     *
+     * @return string
+     */
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    /**
+     * get $name of this project
+     *
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * set $name of this project, recreate $id
+     *
+     * @param string $string
+     */
+    public function setName(string $string)
+    {
+        $string = $this->validateString($string);
+        $this->id = $this->createId($string);
+        $this->name = $string;
     }
 
     /**
@@ -51,12 +98,19 @@ class Project
     }
 
     /**
-     * get $id of this project
+     * validate the string
      *
+     * @param string $string
      * @return string
      */
-    public function getId(): string
+    protected function validateString(string $string): string
     {
-        return $this->id;
+        $string = trim($string);
+        if (strlen($string) == 0) {
+            throw new EmptyStringException;
+        }
+
+        return $string;
     }
+
 }
