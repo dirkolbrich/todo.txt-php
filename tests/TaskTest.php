@@ -138,19 +138,19 @@ class TaskTest extends TestCase
     public function testValidPriority()
     {
         $task = new Task('(A) Important task');
-        $this->assertEquals($task->getPrio(), 'A');
+        $this->assertEquals($task->getPriority(), 'A');
     }
 
     public function testMulticharPriority()
     {
         $task = new Task('(AA) Important task');
-        $this->assertNull($task->getPrio());
+        $this->assertNull($task->getPriority());
     }
 
     public function testLowercasePriority()
     {
         $task = new Task('(a) Important task');
-        $this->assertNull($task->getPrio());
+        $this->assertNull($task->getPriority());
     }
 
     public function testValidProject() {
@@ -174,6 +174,13 @@ class TaskTest extends TestCase
         $this->assertEMpty($task->projects);
     }
 
+    public function testMultipleIdenticalProjects()
+    {
+        $task = new Task('Push to +project +project');
+        $this->assertCount(1, $task->projects);
+        $this->assertTrue('project' == $task->projects->first()->project);
+    }
+
     public function testValidContext()
     {
         $task = new Task('Update @todotxt.net');
@@ -188,6 +195,13 @@ class TaskTest extends TestCase
         $this->assertCount(2, $task->contexts);
         $this->assertTrue('todotxt.net' == $task->contexts[0]->context);
         $this->assertTrue('github' == $task->contexts[1]->context);
+    }
+
+    public function testMultipleIdenticalContexts()
+    {
+        $task = new Task('Update @github @github');
+        $this->assertCount(1, $task->contexts);
+        $this->assertTrue('github' == $task->contexts->first()->context);
     }
 
     public function testInvalidContext()
@@ -214,6 +228,14 @@ class TaskTest extends TestCase
         $this->assertEquals($task->metadata[0]->value, 'today');
         $this->assertEquals($task->metadata[1]->key, 'when');
         $this->assertEquals($task->metadata[1]->value, 'tomorrow');
+    }
+
+    public function testMultipleidenticalMetadata()
+    {
+        $task = new Task('Hello key:value key:value');
+        $this->assertCount(1, $task->metadata);
+        $this->assertEquals($task->metadata->first()->key, 'key');
+        $this->assertEquals($task->metadata->first()->value, 'value');
     }
 
     public function testInvalidMetadataKey()
@@ -272,10 +294,10 @@ class TaskTest extends TestCase
         $task = new Task('x 2011-09-11 2011-09-08 Review Tim\'s pull-request in +todo.txt-web on @github due:2011-09-12 meta:data');
         $this->assertTrue($task->isComplete());
         $this->assertEquals($task->getCompletionDate()->format('Y-m-d'), '2011-09-11');
-        $this->assertNull($task->getPrio());
+        $this->assertNull($task->getPriority());
         $this->assertEquals($task->getCreationDate()->format('Y-m-d'), '2011-09-08');
         $this->assertTrue($task->projects[0]->project == 'todo.txt-web');
-        $this->assertTrue($task->contexts[0]->context == 'github');
+        $this->assertTrue($task->contexts->first()->context == 'github');
         $this->assertTrue($task->isDue());
         $this->assertEquals($task->getDueDate()->format('Y-m-d'), '2011-09-12');
         $this->assertTrue($task->metadata[1]->key == 'meta');
@@ -305,78 +327,78 @@ class TaskTest extends TestCase
     public function testHasPriority()
     {
         $task = new Task('(A) Important task');
-        $this->assertTrue($task->hasPrio());
+        $this->assertTrue($task->hasPriority());
     }
 
     public function testHasNoPriority()
     {
         $task = new Task('Unimportant task');
-        $this->assertFalse($task->hasPrio());
+        $this->assertFalse($task->hasPriority());
     }
 
     public function testSetPriority()
     {
         $task = new Task('A Task needs a priority.');
-        $task->setPrio('A');
-        $this->assertTrue($task->hasPrio());
-        $this->assertEquals($task->getPrio(), 'A');
+        $task->setPriority('A');
+        $this->assertTrue($task->hasPriority());
+        $this->assertEquals($task->getPriority(), 'A');
     }
 
     public function testInvalidPriorityLowerCase()
     {
         $this->expectException(Exceptions\InvalidStringException::class);
         $task = new Task('A Task needs a priority.');
-        $task->setPrio('a');
+        $task->setPriority('a');
     }
 
     public function testInvalidPriorityNumeric()
     {
         $this->expectException(Exceptions\InvalidStringException::class);
         $task = new Task('A Task needs a priority.');
-        $task->setPrio('1');
+        $task->setPriority('1');
     }
 
     public function testInvalidEmptyPriority()
     {
         $this->expectException(Exceptions\InvalidStringException::class);
         $task = new Task('A Task needs a priority.');
-        $task->setPrio('');
+        $task->setPriority('');
     }
 
     public function testUnsetPriority()
     {
         $task = new Task('(A) This task has a priority.');
-        $task->unsetPrio();
-        $this->assertFalse($task->hasPrio());
-        $this->assertNull($task->getPrio());
+        $task->unsetPriority();
+        $this->assertFalse($task->hasPriority());
+        $this->assertNull($task->getPriority());
     }
 
     public function testIncreasePriority()
     {
         $task = new Task('(B) This task has a priority.');
-        $task->increasePrio();
-        $this->assertEquals($task->getPrio(), 'A');
+        $task->increasePriority();
+        $this->assertEquals($task->getPriority(), 'A');
     }
 
     public function testIncreasePriorityMultiple()
     {
         $task = new Task('(D) This task has a priority.');
-        $task->increasePrio(3);
-        $this->assertEquals($task->getPrio(), 'A');
+        $task->increasePriority(3);
+        $this->assertEquals($task->getPriority(), 'A');
     }
 
     public function testDecreasePriority()
     {
         $task = new Task('(A) This task has a priority.');
-        $task->decreasePrio();
-        $this->assertEquals($task->getPrio(), 'B');
+        $task->decreasePriority();
+        $this->assertEquals($task->getPriority(), 'B');
     }
 
     public function testDecreasePriorityMultiple()
     {
         $task = new Task('(A) This task has a priority.');
-        $task->decreasePrio(3);
-        $this->assertEquals($task->getPrio(), 'D');
+        $task->decreasePriority(3);
+        $this->assertEquals($task->getPriority(), 'D');
     }
 
     /** Testing editing of task */

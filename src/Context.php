@@ -34,6 +34,8 @@ class Context
         if (strlen($context) == 0) {
             throw new EmptyStringException;
         }
+
+        $this->id = $this->createId($context);
         $this->context = $context;
     }
 

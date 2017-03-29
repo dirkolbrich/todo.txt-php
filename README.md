@@ -31,22 +31,26 @@ $todoList = new TodoTxt\TodoList($file);
 ```php
 TodoList{
     position => $position,
-    tasks => array(
-        [0] => Task{
-            $id string
-            $raw string
-            $task string
-            $creationDate Date
-            $complete bool
-            $completionDate Date
-            $due bool
-            $dueDate Date
-            $priority string
-            $projects array([0] => Project, ...)
-            $contexts array([0] => Context, ...)
-            $metadata array([0] => MetaData, ...)
-        },
-        // ...
+    tasks => ItemList{
+        $position,
+        $count,
+        $list => array[
+            [0] => Task{
+                $id string
+                $raw string
+                $task string
+                $creationDate Date
+                $complete bool
+                $completionDate Date
+                $due bool
+                $dueDate Date
+                $priority string
+                $projects array([0] => Project, ...)
+                $contexts array([0] => Context, ...)
+                $metadata array([0] => MetaData, ...)
+            },
+            // ...
+        }
     ),
     todo => array(
         [0] => Task{

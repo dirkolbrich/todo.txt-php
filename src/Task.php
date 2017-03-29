@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace TodoTxt;
 
 use TodoTxt\Context;
+use TodoTxt\ItemList;
 use TodoTxt\MetaData;
 use TodoTxt\Project;
 use TodoTxt\Exceptions\EmptyTaskException;
@@ -83,23 +84,23 @@ class Task
     /**
      * A list of project names found (case-sensitive)
      *
-     * @var array
+     * @var ItemList
      */
-    public $projects = [];
+    public $projects;
 
     /**
      * A list of context names found (case-sensitive)
      *
-     * @var array
+     * @var ItemList
      */
-    public $contexts = [];
+    public $contexts;
 
     /**
      * A map of meta-data, contained in the task
      *
-     * @var array
+     * @var ItemList
      */
-    public $metadata = [];
+    public $metadata;
 
     /**
      * Create a new task from a raw line held in a todo.txt file.
@@ -109,6 +110,10 @@ class Task
      */
     public function __construct(string $string)
     {
+        $this->projects = new ItemList();
+        $this->contexts = new ItemList();
+        $this->metadata = new ItemList();
+
         $this->id = $this->createId($string);
 
         $task = trim($string);
@@ -124,7 +129,8 @@ class Task
      * @param string $string
      * @return string
      */
-    protected function createId(string $string): string {
+    protected function createId(string $string): string
+    {
         return md5(utf8_encode($string));
     }
 
@@ -244,8 +250,11 @@ class Task
         // an alphanumeric or underscore, followed either by the end of
         // the string or by whitespace.
         $pattern = "/\+(?P<project>\S+\w)(?=\s|$)/";
+
         if (preg_match_all($pattern, $input, $matches) > 0) {
-            $this->addProject($matches['project']);
+            foreach ($matches['project'] as $project) {
+                $this->addProject($project);
+            }
         }
     }
 
@@ -260,8 +269,11 @@ class Task
         // an alphanumeric or underscore, followed either by the end of
         // the string or by whitespace.
         $pattern = "/@(?P<context>\S+\w)(?=\s|$)/";
+
         if (preg_match_all($pattern, $input, $matches) > 0) {
-            $this->addContext($matches['context']);
+            foreach ($matches['context'] as $context) {
+                $this->addContext($context);
+            }
         }
     }
 
@@ -277,8 +289,11 @@ class Task
         // Match a word (alphanumeric+underscores), a colon, followed by
         // any non-whitespace character.
         $pattern = "/(?<=\s|^)(?P<key>\w+):(?P<value>\S+)(?=\s|$)/";
+
         if (preg_match_all($pattern, $input, $matches, PREG_SET_ORDER) > 0) {
-            $this->addMetadata($matches);
+            foreach ($matches as $match) {
+                $this->addMetadata($match);
+            }
         }
     }
 
@@ -289,7 +304,7 @@ class Task
      */
     protected function findDue()
     {
-        foreach ($this->metadata as $meta) {
+        foreach ($this->metadata->list as $meta) {
             if ($meta->key == 'due') {
                 $this->due = true;
                 $this->dueDate = new \DateTime($meta->value);
@@ -299,53 +314,69 @@ class Task
     }
 
     /**
-     * Add an array of projects to the list.
+     * Add a projects to the project list.
      * Using this method will prevent duplication in the array.
      *
-     * @param array $projects - Array of project names.
+     * @param string $project - project name.
      */
-    protected function addProject(array $projects)
+    protected function addProject(string $project)
     {
-        $projects = array_map("trim", $projects);
-        foreach ($projects as $project) {
-            $this->projects[] = new Project($project);
+        // create a new project
+        $project = new Project($project);
+
+        // validate if created project is already in list
+        foreach ($this->projects->list as $listItem) {
+             if ($listItem->getId() == $project->getId()) {
+                return;
+             }
         }
 
-        $this->projects = array_unique($this->projects, SORT_REGULAR);
+        $this->projects->add($project);
     }
 
     /**
-     * Add an array of contexts to the list.
+     * Add a context to the list.
      * Using this method will prevent duplication in the array.
      *
-     * @param array $contexts - Array of context names.
+     * @param string $context - context name
      */
-    protected function addContext(array $contexts)
+    protected function addContext(string $context)
     {
-        $contexts = array_map("trim", $contexts);
-        foreach ($contexts as $context) {
-            $this->contexts[] = new Context($context);
+        //create new context
+        $context = new Context($context);
+
+        foreach ($this->contexts->list as $listItem) {
+            if ($listItem->getId() == $context->getId()) {
+                return;
+             }
         }
-        $this->contexts = array_unique($this->contexts, SORT_REGULAR);
+
+        $this->contexts->add($context);
     }
 
     /**
-     * Add an array of metadata to the list.
+     * Add a metadata to the list.
      *
      * @param array $regexMatches - Array of metadata keys and values.
      */
-    protected function addMetadata(array $regexMatches)
+    protected function addMetadata(array $regexMatch)
     {
-        foreach ($regexMatches as $match) {
-            $metadata = [
-            'full'  => $match[0],
-            'key'   => $match['key'],
-            'value' => $match['value'],
-            ];
+        // create new metadata
+        $match = [
+            'full'  => $regexMatch[0],
+            'key'   => $regexMatch['key'],
+            'value' => $regexMatch['value'],
+        ];
+        $metadata = new MetaData($match);
 
-            $md = new MetaData($metadata);
-            $this->metadata[] = $md;
+        // validate metadata for duplicate
+        foreach ($this->metadata->list as $listItem) {
+            if ($listItem->getId() == $metadata->getId()) {
+                return;
+             }
         }
+
+        $this->metadata->add($metadata);
     }
 
     /**
@@ -432,7 +463,7 @@ class Task
     /**
      * @return bool
      */
-    public function hasPrio(): bool
+    public function hasPriority(): bool
     {
         if (isset($this->priority)) {
             return true;
@@ -444,7 +475,7 @@ class Task
     /**
      * @return string||null
      */
-    public function getPrio()
+    public function getPriority()
     {
         return $this->priority;
     }
@@ -455,7 +486,7 @@ class Task
      * @param string $priority
      * @throws InvalidStringException
      */
-    public function setPrio(string $priority)
+    public function setPriority(string $priority)
     {
         if (!ctype_alpha($priority) || !ctype_upper($priority)) {
             throw new InvalidStringException;
@@ -467,7 +498,7 @@ class Task
     /**
      * unset $priority of task
      */
-    public function unsetPrio()
+    public function unsetPriority()
     {
         $this->priority = null;
         $this->raw = $this->rebuildRawString();
@@ -478,7 +509,7 @@ class Task
      *
      * @param integer $step
      */
-    public function increasePrio(int $step = 1)
+    public function increasePriority(int $step = 1)
     {
         // if Priority already at highest
         if ($this->priority === 'A') {
@@ -500,7 +531,7 @@ class Task
      *
      * @param integer $step
      */
-    public function decreasePrio(int $step = 1)
+    public function decreasePriority(int $step = 1)
     {
         // if Priority already at lowest
         if ($this->priority === 'Z') {

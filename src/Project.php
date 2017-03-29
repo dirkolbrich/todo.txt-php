@@ -28,7 +28,7 @@ class Project
      * @param string $project A raw task line
      * @throws EmptyStringException when $project is an empty string (or whitespace)
      */
-    public function __construct($project)
+    public function __construct(string $project)
     {
         $project = trim($project);
         if (strlen($project) == 0) {
