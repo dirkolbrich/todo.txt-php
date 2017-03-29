@@ -23,10 +23,9 @@ class Project
     protected $name = '';
 
     /**
-     * Create a new project from a raw line held in a todo.txt file.
+     * Create a new project from a raw string
      *
-     * @param string $project A raw task line
-     * @throws EmptyStringException when $project is an empty string (or whitespace)
+     * @param string $project
      */
     public function __construct(string $string = null)
     {

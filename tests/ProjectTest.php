@@ -65,4 +65,16 @@ class ProjectTest extends TestCase
         $this->assertEquals('test', $project->getName());
         $this->assertEquals(md5(utf8_encode('test')), $project->getId());
     }
+
+    /**
+     * Test setting $name of empty object
+     */
+    public function testSettingNameWithEmptyString()
+    {
+        // Empty string
+        $this->expectException(Exceptions\EmptyStringException::class);
+
+        $project = new Project('test');
+        $project->setName('');
+    }
 }

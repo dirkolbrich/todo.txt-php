@@ -10,33 +10,79 @@ use TodoTxt\Exceptions\EmptyStringException;
  */
 class Context
 {
-
     /**
      * The md5 hash of the raw utf-8 encoded string
      *
      * @var string
      */
-    protected $id;
+    protected $id = '';
 
     /**
      * @var string
      */
-    public $context;
+    public $name = '';
 
     /**
-     * Create a new project from a raw line held in a todo.txt file.
-     * @param string $context A raw task line
-     * @throws EmptyStringException When $project is an empty string (or whitespace)
+     * Create a new context from a raw string
+     *
+     * @param string $context
      */
-    public function __construct(string $context)
+    public function __construct(string $string = null)
     {
-        $context = trim($context);
-        if (strlen($context) == 0) {
-            throw new EmptyStringException;
+        if (!is_null($string)) {
+            $string = $this->validateString($string);
+            $this->id = $this->createId($string);
+            $this->name = $string;
         }
+    }
 
-        $this->id = $this->createId($context);
-        $this->context = $context;
+    /**
+     * static constructor function
+     *
+     * @param string $string - a string representing the name of a context
+     * @return self
+     */
+    public static function withString(string $string): self
+    {
+        $context = new Context();
+
+        $string = $context->validateString($string);
+        $context->id = $context->createId($string);
+        $context->name = $string;
+
+        return $context;
+    }
+
+    /**
+     * get $id of this context
+     *
+     * @return string
+     */
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    /**
+     * get $name of this context
+     *
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * set $name of this context, recreate $id
+     *
+     * @param string $string
+     */
+    public function setName(string $string)
+    {
+        $string = $this->validateString($string);
+        $this->id = $this->createId($string);
+        $this->name = $string;
     }
 
     /**
@@ -51,12 +97,18 @@ class Context
     }
 
     /**
-     * get $id of this context
+     * validate the string
      *
+     * @param string $string
      * @return string
      */
-    public function getId(): string
+    protected function validateString(string $string): string
     {
-        return $this->id;
+        $string = trim($string);
+        if (strlen($string) == 0) {
+            throw new EmptyStringException;
+        }
+
+        return $string;
     }
 }
