@@ -158,6 +158,7 @@ class Task
         $string = $this->validateString($string);
         $this->id = $this->createId($string);
         $this->parse($string);
+
         return $this;
     }
     /**
@@ -209,21 +210,25 @@ class Task
     /**
      * set task to complete
      */
-    public function complete()
+    public function complete(): self
     {
         $this->complete = true;
         $this->completionDate = new \DateTime("now");
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
      * set task to uncomplete
      */
-    public function uncomplete()
+    public function uncomplete(): self
     {
         $this->complete = false;
         $this->completionDate = null;
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
@@ -291,22 +296,26 @@ class Task
      * @param string $priority
      * @throws InvalidStringException
      */
-    public function setPriority(string $priority)
+    public function setPriority(string $priority): self
     {
         if (!ctype_alpha($priority) || !ctype_upper($priority)) {
             throw new InvalidStringException;
         }
         $this->priority = $priority;
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
      * unset $priority of task
      */
-    public function unsetPriority()
+    public function unsetPriority(): self
     {
         $this->priority = null;
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
@@ -314,7 +323,7 @@ class Task
      *
      * @param integer $step
      */
-    public function increasePriority(int $step = 1)
+    public function increasePriority(int $step = 1): self
     {
         // if Priority already at highest
         if ($this->priority === 'A') {
@@ -329,6 +338,8 @@ class Task
         } while ($step > 0);
 
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
@@ -336,7 +347,7 @@ class Task
      *
      * @param integer $step
      */
-    public function decreasePriority(int $step = 1)
+    public function decreasePriority(int $step = 1): self
     {
         // if Priority already at lowest
         if ($this->priority === 'Z') {
@@ -350,6 +361,8 @@ class Task
         } while ($step > 0);
 
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
@@ -374,10 +387,12 @@ class Task
      * @param string $string
      * @throws EmptyStringException
      */
-    public function edit(string $string)
+    public function edit(string $string): self
     {
         $string = $this->validateString($string);
         $this->parse($string);
+
+        return $this;
     }
 
     /**
@@ -385,12 +400,14 @@ class Task
      *
      * @param string $string
      */
-    public function append(string $string)
+    public function append(string $string):self
     {
         $string = $this->validateString($string);
 
         $this->task .= ' ' . $string;
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
@@ -398,12 +415,14 @@ class Task
      *
      * @param string $string
      */
-    public function prepend(string $string)
+    public function prepend(string $string): self
     {
         $string = $this->validateString($string);
 
         $this->task = $string . ' ' . $this->task;
         $this->raw = $this->rebuildRawString();
+
+        return $this;
     }
 
     /**
