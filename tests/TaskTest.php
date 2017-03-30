@@ -10,12 +10,35 @@ use PHPUnit\Framework\TestCase;
 class TaskTest extends TestCase
 {
     /**
+     * Test ItemList instantiation
+     */
+    public function testInstantiation()
+    {
+        $task = new Task();
+
+        $this->assertInstanceOf("TodoTxt\Task", $task);
+        $this->assertEmpty($task->getId());
+        $this->assertEmpty($task->getTask());
+    }
+
+    /**
+     * Test instantiation with static method
+     */
+    public function testStatic()
+    {
+        $task = Task::withString('This is a task');
+
+        $this->assertInstanceOf("TodoTxt\Task", $task);
+        $this->assertEquals('This is a task', $task->getTask());
+    }
+
+    /**
      * Test simple tasks, whitespace trimming and a few edge cases
      */
     public function testStandard()
     {
         $task = new Task('This is a task');
-        $this->assertEquals((string) $task, 'This is a task');
+        $this->assertEquals('This is a task', $task->getTask());
     }
 
     public function testTrailingWhitespace()
@@ -157,15 +180,15 @@ class TaskTest extends TestCase
         $task = new Task('Push to +todo.txt-web');
         $this->assertInstanceOf('TodoTxt\Project', $task->projects[0]);
         $this->assertCount(1, $task->projects);
-        $this->assertTrue('todo.txt-web' == $task->projects[0]->project);
+        $this->assertTrue('todo.txt-web' == $task->projects[0]->getName());
     }
 
     public function testMultipleValidProjects()
     {
         $task = new Task('Push to +todo.txt-web +open-source');
         $this->assertCount(2, $task->projects);
-        $this->assertTrue('todo.txt-web' == $task->projects[0]->project);
-        $this->assertTrue('open-source' == $task->projects[1]->project);
+        $this->assertTrue('todo.txt-web' == $task->projects[0]->getName());
+        $this->assertTrue('open-source' == $task->projects[1]->getName());
     }
 
     public function testInvalidProject()
@@ -178,7 +201,7 @@ class TaskTest extends TestCase
     {
         $task = new Task('Push to +project +project');
         $this->assertCount(1, $task->projects);
-        $this->assertTrue('project' == $task->projects->first()->project);
+        $this->assertTrue('project' == $task->projects->first()->getName());
     }
 
     public function testValidContext()
@@ -186,22 +209,22 @@ class TaskTest extends TestCase
         $task = new Task('Update @todotxt.net');
         $this->assertInstanceOf('TodoTxt\Context', $task->contexts[0]);
         $this->assertCount(1, $task->contexts);
-        $this->assertTrue('todotxt.net' == $task->contexts[0]->context);
+        $this->assertTrue('todotxt.net' == $task->contexts[0]->getName());
     }
 
     public function testMultipleValidContexts()
     {
         $task = new Task('Update @todotxt.net @github');
         $this->assertCount(2, $task->contexts);
-        $this->assertTrue('todotxt.net' == $task->contexts[0]->context);
-        $this->assertTrue('github' == $task->contexts[1]->context);
+        $this->assertTrue('todotxt.net' == $task->contexts[0]->getName());
+        $this->assertTrue('github' == $task->contexts[1]->getName());
     }
 
     public function testMultipleIdenticalContexts()
     {
         $task = new Task('Update @github @github');
         $this->assertCount(1, $task->contexts);
-        $this->assertTrue('github' == $task->contexts->first()->context);
+        $this->assertTrue('github' == $task->contexts->first()->getName());
     }
 
     public function testInvalidContext()
@@ -210,32 +233,31 @@ class TaskTest extends TestCase
         $this->assertEmpty($task->contexts);
     }
 
-
     public function testValidMetadata()
     {
         $task = new Task('Essay due:today');
         $this->assertInstanceOf('TodoTxt\MetaData', $task->metadata[0]);
         $this->assertCount(1, $task->metadata);
-        $this->assertEquals($task->metadata[0]->key, 'due');
-        $this->assertEquals($task->metadata[0]->value, 'today');
+        $this->assertEquals($task->metadata[0]->getKey(), 'due');
+        $this->assertEquals($task->metadata[0]->getValue(), 'today');
     }
 
     public function testMultipleValidMetadata()
     {
         $task = new Task('Hello due:today when:tomorrow');
         $this->assertCount(2, $task->metadata);
-        $this->assertEquals($task->metadata[0]->key, 'due');
-        $this->assertEquals($task->metadata[0]->value, 'today');
-        $this->assertEquals($task->metadata[1]->key, 'when');
-        $this->assertEquals($task->metadata[1]->value, 'tomorrow');
+        $this->assertEquals($task->metadata[0]->getKey(), 'due');
+        $this->assertEquals($task->metadata[0]->getValue(), 'today');
+        $this->assertEquals($task->metadata[1]->getKey(), 'when');
+        $this->assertEquals($task->metadata[1]->getValue(), 'tomorrow');
     }
 
     public function testMultipleidenticalMetadata()
     {
         $task = new Task('Hello key:value key:value');
         $this->assertCount(1, $task->metadata);
-        $this->assertEquals($task->metadata->first()->key, 'key');
-        $this->assertEquals($task->metadata->first()->value, 'value');
+        $this->assertEquals($task->metadata->first()->getKey(), 'key');
+        $this->assertEquals($task->metadata->first()->getValue(), 'value');
     }
 
     public function testInvalidMetadataKey()
@@ -296,12 +318,12 @@ class TaskTest extends TestCase
         $this->assertEquals($task->getCompletionDate()->format('Y-m-d'), '2011-09-11');
         $this->assertNull($task->getPriority());
         $this->assertEquals($task->getCreationDate()->format('Y-m-d'), '2011-09-08');
-        $this->assertTrue($task->projects[0]->project == 'todo.txt-web');
-        $this->assertTrue($task->contexts->first()->context == 'github');
+        $this->assertTrue($task->projects[0]->getName() == 'todo.txt-web');
+        $this->assertTrue($task->contexts->first()->getName() == 'github');
         $this->assertTrue($task->isDue());
         $this->assertEquals($task->getDueDate()->format('Y-m-d'), '2011-09-12');
-        $this->assertTrue($task->metadata[1]->key == 'meta');
-        $this->assertTrue($task->metadata[1]->value == 'data');
+        $this->assertTrue($task->metadata[1]->getKey() == 'meta');
+        $this->assertTrue($task->metadata[1]->getvalue() == 'data');
     }
 
     /** Testing completion of Task */
@@ -412,14 +434,14 @@ class TaskTest extends TestCase
     public function testAppendingString()
     {
         $task = new Task('This is a task');
-        $task->append(' with appended text.');
-        $this->assertEquals((string) $task, 'This is a task with appended text.');
+        $task->append('with appended text');
+        $this->assertEquals((string) $task, 'This is a task with appended text');
     }
 
     public function testPrependingString()
     {
-        $task = new Task('This is a task.');
-        $task->prepend('Prepended text to ');
-        $this->assertEquals((string) $task, 'Prepended text to This is a task.');
+        $task = new Task('This is a task');
+        $task->prepend('Prepended text to');
+        $this->assertEquals((string) $task, 'Prepended text to This is a task');
     }
 }

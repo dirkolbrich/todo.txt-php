@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace TodoTxt;
 
 use TodoTxt\Context;
-use TodoTxt\ItemList;
+use TodoTxt\Collection;
 use TodoTxt\MetaData;
 use TodoTxt\Project;
 use TodoTxt\Exceptions\EmptyTaskException;
@@ -22,7 +22,7 @@ class Task
     /**
      * The md5 hash of the raw utf-8 encoded string
      *
-     * var string
+     * @var string
      */
     protected $id;
 
@@ -84,21 +84,21 @@ class Task
     /**
      * A list of project names found (case-sensitive)
      *
-     * @var ItemList
+     * @var Collection
      */
     public $projects;
 
     /**
      * A list of context names found (case-sensitive)
      *
-     * @var ItemList
+     * @var Collection
      */
     public $contexts;
 
     /**
      * A map of meta-data, contained in the task
      *
-     * @var ItemList
+     * @var Collection
      */
     public $metadata;
 
@@ -106,21 +106,320 @@ class Task
      * Create a new task from a raw line held in a todo.txt file.
      *
      * @param string $string A raw task line
+     * @param Collection $collection type of collection used
      * @throws \EmptyStringException When $task is an empty string (or whitespace)
      */
-    public function __construct(string $string)
+    public function __construct(string $string = null, Collection $collection = null)
     {
-        $this->projects = new ItemList();
-        $this->contexts = new ItemList();
-        $this->metadata = new ItemList();
+        // set Collection object
+        if ($collection == null) {
+            $this->projects = new Collection();
+            $this->contexts = new Collection();
+            $this->metadata = new Collection();
+        } else {
+            $this->projects = $collection;
+            $this->contexts = $collection;
+            $this->metadata = $collection;
+        }
 
+        // handle string at instantiation
+        if (!is_null($string)) {
+            $string = $this->validateString($string);
+            $this->id = $this->createId($string);
+            $this->parse($string);
+        }
+    }
+
+    /**
+     * static constructor function
+     *
+     * @param string $string - a string representing the raw task
+     * @return self
+     */
+    public static function withString(string $string): self
+    {
+        $task = new Task();
+
+        $string = $task->validateString($string);
+        $task->id = $task->createId($string);
+        $task->parse($string);
+
+        return $task;
+    }
+
+    /**
+     * set the task
+     *
+     * @param string $string - a string representing the raw task
+     * @return self
+     */
+    public function setTask(string $string): self
+    {
+        $string = $this->validateString($string);
         $this->id = $this->createId($string);
+        $this->parse($string);
+        return $this;
+    }
+    /**
+     * Get the id of the task
+     *
+     * @return string|null
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
 
-        $task = trim($string);
-        if (strlen($task) == 0) {
+    /**
+     * Get the remainder of the task (sans completed marker, creation date and priority)
+     *
+     * @return string|null
+     */
+    public function getTask()
+    {
+        return $this->task;
+    }
+
+    /**
+     * return the $priority of this task
+     *
+     * @return string|null
+     */
+    public function getPriority()
+    {
+        return $this->priority;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isComplete(): bool
+    {
+        return $this->complete;
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getCompletionDate()
+    {
+        return $this->isComplete() && isset($this->completionDate) ? $this->completionDate : null;
+    }
+
+    /**
+     * set task to complete
+     */
+    public function complete()
+    {
+        $this->complete = true;
+        $this->completionDate = new \DateTime("now");
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * set task to uncomplete
+     */
+    public function uncomplete()
+    {
+        $this->complete = false;
+        $this->completionDate = null;
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getCreationDate()
+    {
+        return isset($this->creationDate) ? $this->creationDate : null;
+    }
+
+    /**
+     * Returns the age of the task if the task has a creation date.
+     *
+     * @param \DateTime|string $endDate  - The end-date to use if the task
+     * does not have a completion date. If this is null and the task
+     * doesn't have a completion date the current date will be used.
+     *
+     * @return \DateInterval  - the age of the task.
+     * @throws \CannotCalculateAgeException - If the task does not have a creation date
+     * @throws \CompletionParadoxException - If the task is completed before the creation date
+     */
+    public function age($endDate = null)
+    {
+        if (!isset($this->creationDate)) {
+            throw new CannotCalculateAgeException;
+        }
+
+        // Decide on an end-date to use - completionDate, then a
+        // provided date, then the current date.
+        $end = new \DateTime('now');
+        if (isset($this->completionDate)) {
+            $end = $this->completionDate;
+        } elseif (!is_null($endDate)) {
+            if (!($endDate instanceof \DateTime)) {
+                $endDate = new \DateTime($endDate);
+            }
+            $end = $endDate;
+        }
+
+        $diff = $this->creationDate->diff($end);
+        if ($diff->invert) {
+            throw new CompletionParadoxException;
+        }
+
+        return $diff;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasPriority(): bool
+    {
+        if (isset($this->priority)) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+
+    /**
+     * set priority of a task, overrides old $priority
+     *
+     * @param string $priority
+     * @throws InvalidStringException
+     */
+    public function setPriority(string $priority)
+    {
+        if (!ctype_alpha($priority) || !ctype_upper($priority)) {
+            throw new InvalidStringException;
+        }
+        $this->priority = $priority;
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * unset $priority of task
+     */
+    public function unsetPriority()
+    {
+        $this->priority = null;
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * increase $priority of task
+     *
+     * @param integer $step
+     */
+    public function increasePriority(int $step = 1)
+    {
+        // if Priority already at highest
+        if ($this->priority === 'A') {
+            return;
+        }
+
+        // get $priority and set it one higher
+        do {
+            // decrementing character is not implemented in PHP
+            $this->priority = chr(ord($this->priority) - 1);
+            --$step;
+        } while ($step > 0);
+
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * decrease $priority of task
+     *
+     * @param integer $step
+     */
+    public function decreasePriority(int $step = 1)
+    {
+        // if Priority already at lowest
+        if ($this->priority === 'Z') {
+            return;
+        }
+
+        // get $priority and set it one higher
+        do {
+            ++$this->priority;
+            --$step;
+        } while ($step > 0);
+
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isDue(): bool
+    {
+        return $this->due;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getDueDate()
+    {
+        return $this->isDue() && isset($this->dueDate) ? $this->dueDate : null;
+    }
+
+    /**
+     * edit the complete task
+     *
+     * @param string $string
+     * @throws EmptyStringException
+     */
+    public function edit(string $string)
+    {
+        $string = $this->validateString($string);
+        $this->parse($string);
+    }
+
+    /**
+     * append $string to end of task
+     *
+     * @param string $string
+     */
+    public function append(string $string)
+    {
+        $string = $this->validateString($string);
+
+        $this->task .= ' ' . $string;
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * prepend $string to beginning of task, but after any completion or creation markers
+     *
+     * @param string $string
+     */
+    public function prepend(string $string)
+    {
+        $string = $this->validateString($string);
+
+        $this->task = $string . ' ' . $this->task;
+        $this->raw = $this->rebuildRawString();
+    }
+
+    /**
+     * validate the string
+     *
+     * @param string $string
+     * @return string
+     */
+    protected function validateString(string $string): string
+    {
+        $string = trim($string);
+        if (strlen($string) == 0) {
             throw new EmptyStringException;
         }
-        $this->parse($task);
+
+        return $string;
     }
 
     /**
@@ -137,16 +436,16 @@ class Task
     /**
      * Parse the raw task string into its components
      *
-     * @param string $task
+     * @param string $string
      * @throws EmptyTaskException
      */
-    protected function parse(string $task)
+    protected function parse(string $string)
     {
-        $this->raw = $task;
+        $this->raw = $string;
 
         // Since each of these parts can occur sequentially and only at
         // the start of the string, pass the remainder of the task on.
-        $result = $this->findCompleted($task);
+        $result = $this->findCompleted($string);
         $result = $this->findPriority($result);
         $result = $this->findCreated($result);
 
@@ -161,7 +460,9 @@ class Task
         $this->findProject($result);
         $this->findContext($result);
         $this->findMetadata($result);
-        $this->findDue($result);
+
+        // if no metadata, no need to find a due date within them
+        ($this->metadata->isEmpty()) ? : $this->findDue($result);
     }
 
     /**
@@ -304,10 +605,10 @@ class Task
      */
     protected function findDue()
     {
-        foreach ($this->metadata->list as $meta) {
-            if ($meta->key == 'due') {
+        foreach ($this->metadata as $meta) {
+            if ($meta->getKey() == 'due') {
                 $this->due = true;
-                $this->dueDate = new \DateTime($meta->value);
+                $this->dueDate = new \DateTime($meta->getValue());
                 return;
             }
         }
@@ -324,11 +625,19 @@ class Task
         // create a new project
         $project = new Project($project);
 
-        // validate if created project is already in list
-        foreach ($this->projects->list as $listItem) {
-             if ($listItem->getId() == $project->getId()) {
-                return;
-             }
+        if (!$this->projects->isEmpty()) {
+            // validate if created project is already in list
+            foreach ($this->projects as $item) {
+                if ($item->getId() == $project->getId()) {
+                    return;
+                }
+            }
+
+            // using collection method - refactor!
+            // $projects = $this->projects->filter(function($item) use ($project) {
+            //     $item->getId() == $project->getId();
+            // });
+            // var_dump($projects);
         }
 
         $this->projects->add($project);
@@ -345,10 +654,12 @@ class Task
         //create new context
         $context = new Context($context);
 
-        foreach ($this->contexts->list as $listItem) {
-            if ($listItem->getId() == $context->getId()) {
-                return;
-             }
+        if (!$this->contexts->isEmpty()) {
+            foreach ($this->contexts as $item) {
+                if ($item->getId() == $context->getId()) {
+                    return;
+                 }
+            }
         }
 
         $this->contexts->add($context);
@@ -370,274 +681,24 @@ class Task
         $metadata = new MetaData($match);
 
         // validate metadata for duplicate
-        foreach ($this->metadata->list as $listItem) {
-            if ($listItem->getId() == $metadata->getId()) {
-                return;
-             }
+        if (!$this->metadata->isEmpty()) {
+            foreach ($this->metadata as $item) {
+                if ($item->getId() == $metadata->getId()) {
+                    return;
+                 }
+            }
         }
 
         $this->metadata->add($metadata);
     }
 
-    /**
-     * @return bool
-     */
-    public function isComplete(): bool
-    {
-        return $this->complete;
-    }
-
-    /**
-     * @return \DateTime|null
-     */
-    public function getCompletionDate()
-    {
-        return $this->isComplete() && isset($this->completionDate) ? $this->completionDate : null;
-    }
-
-    /**
-     * set task to complete
-     */
-    public function complete()
-    {
-        $this->complete = true;
-        $this->completionDate = new \DateTime("now");
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * set task to uncomplete
-     */
-    public function uncomplete()
-    {
-        $this->complete = false;
-        $this->completionDate = null;
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * @return \DateTime|null
-     */
-    public function getCreationDate()
-    {
-        return isset($this->creationDate) ? $this->creationDate : null;
-    }
-
-    /**
-     * Returns the age of the task if the task has a creation date.
-     *
-     * @param \DateTime|string $endDate  - The end-date to use if the task
-     * does not have a completion date. If this is null and the task
-     * doesn't have a completion date the current date will be used.
-     *
-     * @return \DateInterval  - the age of the task.
-     * @throws \CannotCalculateAgeException - If the task does not have a creation date
-     * @throws \CompletionParadoxException - If the task is completed before the creation date
-     */
-    public function age($endDate = null)
-    {
-        if (!isset($this->creationDate)) {
-            throw new CannotCalculateAgeException;
-        }
-
-        // Decide on an end-date to use - completionDate, then a
-        // provided date, then the current date.
-        $end = new \DateTime('now');
-        if (isset($this->completionDate)) {
-            $end = $this->completionDate;
-        } elseif (!is_null($endDate)) {
-            if (!($endDate instanceof \DateTime)) {
-                $endDate = new \DateTime($endDate);
-            }
-            $end = $endDate;
-        }
-
-        $diff = $this->creationDate->diff($end);
-        if ($diff->invert) {
-            throw new CompletionParadoxException;
-        }
-
-        return $diff;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasPriority(): bool
-    {
-        if (isset($this->priority)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return string||null
-     */
-    public function getPriority()
-    {
-        return $this->priority;
-    }
-
-    /**
-     * set priority of a task, overrides old $priority
-     *
-     * @param string $priority
-     * @throws InvalidStringException
-     */
-    public function setPriority(string $priority)
-    {
-        if (!ctype_alpha($priority) || !ctype_upper($priority)) {
-            throw new InvalidStringException;
-        }
-        $this->priority = $priority;
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * unset $priority of task
-     */
-    public function unsetPriority()
-    {
-        $this->priority = null;
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * increase $priority of task
-     *
-     * @param integer $step
-     */
-    public function increasePriority(int $step = 1)
-    {
-        // if Priority already at highest
-        if ($this->priority === 'A') {
-            return;
-        }
-
-        // get $priority and set it one higher
-        do {
-            // decrementing character is not implemented in PHP
-            $this->priority = chr(ord($this->priority) - 1);
-            --$step;
-        } while ($step > 0);
-
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * decrease $priority of task
-     *
-     * @param integer $step
-     */
-    public function decreasePriority(int $step = 1)
-    {
-        // if Priority already at lowest
-        if ($this->priority === 'Z') {
-            return;
-        }
-
-        // get $priority and set it one higher
-        do {
-            ++$this->priority;
-            --$step;
-        } while ($step > 0);
-
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * @return bool
-     */
-    public function isDue(): bool
-    {
-        return $this->due;
-    }
-
-    /**
-     * @return \DateTime
-     */
-    public function getDueDate()
-    {
-        return $this->isDue() && isset($this->dueDate) ? $this->dueDate : null;
-    }
-
-    /**
-     * Get the id of the task
-     *
-     * @return string
-     */
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    /**
-     * Get the remainder of the task (sans completed marker, creation date and priority)
-     *
-     * @return string
-     */
-    public function getTask(): string
-    {
-        return $this->task;
-    }
-
-    /**
-     * edit the complete task
-     *
-     * @param string $string
-     * @throws EmptyStringException
-     */
-    public function edit(string $string)
-    {
-        $task = trim($string);
-        if (strlen($task) == 0) {
-            throw new EmptyStringException;
-        }
-        $this->parse($task);
-    }
-
-    /**
-     * append $string to end of task
-     *
-     * @param string $string
-     */
-    public function append(string $string)
-    {
-        // Find metadata held in the appended string
-        $this->findProject($string);
-        $this->findContext($string);
-        $this->findMetadata($string);
-        $this->findDue($string);
-
-        $this->task .= $string;
-        $this->raw = $this->rebuildRawString();
-    }
-
-    /**
-     * prepend $string to beginning of task, but after any completion or creation markers
-     *
-     * @param string $string
-     */
-    public function prepend(string $string)
-    {
-        // Find metadata held in the prepended string
-        $this->findProject($string);
-        $this->findContext($string);
-        $this->findMetadata($string);
-        $this->findDue($string);
-
-        $this->task = $string . $this->task;
-        $this->raw = $this->rebuildRawString();
-    }
 
     /**
      * Re-build the raw task string.
      *
      * @return string The task as a todo.txt line.
      */
-    public function rebuildRawString(): string
+    protected function rebuildRawString(): string
     {
         $raw = '';
         if ($this->isComplete()) {
