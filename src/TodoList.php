@@ -3,15 +3,15 @@ declare(strict_types=1);
 
 namespace TodoTxt;
 
-use TodoTxt\ItemList;
 use TodoTxt\Task;
+use TodoTxt\Collection;
 
 /**
  * Encapsulates a complete todo.txt list.
  * Handles the adding and editing of tasks.
  */
 
-class TodoList implements \Serializable
+class TodoList
 {
     /**
      * @var string
@@ -21,73 +21,74 @@ class TodoList implements \Serializable
     /**
      * container for an array of all tasks
      *
-     * @var ItemList
+     * @var Collection
      */
     protected $tasks;
 
     /**
      * container for an array of uncompleted tasks
      *
-     * @var ItemList
+     * @var Collection
      */
     protected $todo;
 
     /**
-     * list of completed tasks
+     * container for completed tasks
      *
-     * @var ItemList
+     * @var Collection
      */
     protected $done;
 
     /**
-     * Array of Projects in tasks
+     * container for Projects in tasks
      *
-     * @var ItemList
+     * @var Collection
      */
     protected $projects;
 
     /**
-     * Array of Contexts in $tasks
+     * container for Contexts in $tasks
      *
-     * @var ItemList
+     * @var Collection
      */
     protected $contexts;
 
     /**
-     * Array of Metadata in $tasks
+     * container for Metadata in $tasks
      *
-     * @var ItemList
+     * @var Collection
      */
     protected $metadata;
 
     /**
      * @param mixed $input
      */
-    public function __construct($input = null)
+    public function __construct($input = null, Collection $collection = null)
     {
-        $this->tasks = new ItemList();
-        $this->todo = new ItemList();
-        $this->done = new ItemList();
-        $this->projects = new ItemList();
-        $this->contexts = new ItemList();
-        $this->metadata = new ItemList();
+        //injecting Collection dependency
+        if (is_null($collection)) {
+            $this->tasks = new Collection();
+            $this->todo = new Collection();
+            $this->done = new Collection();
+            $this->projects = new Collection();
+            $this->contexts = new Collection();
+            $this->metadata = new Collection();
+        } else {
+            $this->tasks = $collection;
+            $this->todo = $collection;
+            $this->done = $collection;
+            $this->projects = $collection;
+            $this->contexts = $collection;
+            $this->metadata = $collection;
+        }
 
-        // check for input type
         if (!is_null($input)) {
-            switch ($input) {
-                // $input is new line separated string
-                case (is_string($input) && strpos($input, PHP_EOL)):
-                    $tasks = $this->split($input);
-                    $this->addMultiple($tasks);
-                    break;
-                // $input is an array
-                case (is_array($input)):
-                    $this->addMultiple($input);
-                    break;
-                // $input is a simple string
-                default:
-                    $this->addTask($input);
-                    break;
+            // validate input type
+            $tasks = $this->validateInput($input);
+
+            // process each task
+            foreach ($tasks as $task) {
+                $this->processTask($task);
             }
         }
     }
@@ -98,9 +99,107 @@ class TodoList implements \Serializable
      * @param mixed $input
      * @return TodoList
      */
-    public static function make($input = null): TodoList
+    public static function make($input = null, Collection $collection = null): TodoList
     {
-        return new static($input);
+        return new static($input, $collection);
+    }
+
+    /**
+     * statik constructor with string
+     *
+     * @param string $string
+     * @return self
+     */
+    public static function withString(string $string, Collection $collection = null): self
+    {
+        $list = new TodoList();
+
+        if (strpos($string, PHP_EOL)) {
+            $lines = $tlist->splitString($string);
+            $list->addMultipleTasks($lines);
+        } else {
+            // simple string
+            $list->addTask($string);
+        }
+
+        return $list;
+    }
+
+    /**
+     * statik constructor with array
+     *
+     * @param array $array
+     * @return self
+     */
+    public static function withArray(array $array, Collection $collection = null): self
+    {
+        $list = new TodoList();
+        $list->addMultipleTasks($array);
+
+        return $list;
+    }
+
+    /**
+     * statik constructor with array
+     *
+     * @param Task $task
+     * @return self
+     */
+    public static function withTask(Task $task, Collection $collection = null): self
+    {
+        $list = new TodoList();
+        $list->addTask($task);
+
+        return $list;
+    }
+
+    /**
+     * validate Input for type
+     *
+     * @param mixed $input
+     * @return array
+     */
+    protected function validateInput($input = null): array
+    {
+        $tasks = [];
+
+        if (is_null($input)) {
+            return $tasks;
+        }
+
+        switch ($input) {
+            // $input is an array - enter recursive validation
+            case (is_array($input)):
+                foreach ($input as $item) {
+                    $tasks = array_merge($tasks, $this->validateInput($item));
+                }
+                break;
+            // $input is already a single Task class
+            case ($input instanceof Task):
+                $tasks[] = $input;
+                break;
+            // $input is new line separated string
+            case (is_string($input) && strpos($input, PHP_EOL)):
+                $lines = $this->splitString($input);
+                $tasks = array_merge($tasks, $lines);
+                break;
+            // $input is simple string
+            case (is_string($input)):
+                $tasks[] = $input;
+                break;
+            // $input is something else, return empty
+            default:
+                break;
+        }
+
+        // make sure, every task is a Task object
+        foreach ($tasks as $key => $task) {
+            if (!$task instanceof Task) {
+                $tasks[$key] = new Task($task);
+            }
+        }
+
+        return $tasks;
     }
 
     /**
@@ -109,7 +208,7 @@ class TodoList implements \Serializable
      * @param string $string A newline-separated string of tasks.
      * @return array $lines
      */
-    protected function split(string $string): array
+    protected function splitString(string $string): array
     {
         $lines = [];
 
@@ -124,24 +223,24 @@ class TodoList implements \Serializable
     }
 
     /**
-     * add a new task
+     * process a single Task to integrate into $todolist
      *
-     * @param mixed $task
+     * @param Task $task
      * @return Task
      */
-    public function addTask($task): Task
+    protected function processTask(Task $task): Task
     {
-        if (!($task instanceof Task)) {
-            $task = new Task((string) $task);
-        }
+        // add task to $tasks collection
         $this->tasks->add($task);
 
+        // validate and sort to $todo od $done collection
         if ($task->isComplete()) {
             $this->done->add($task);
         } else {
             $this->todo->add($task);
         }
 
+        // add project, context and metadata of task to collections
         $this->addProject($task);
         $this->addContext($task);
         $this->addMetadata($task);
@@ -150,15 +249,34 @@ class TodoList implements \Serializable
     }
 
     /**
+     * add a new task
+     *
+     * @param mixed $task
+     * @return self
+     */
+    public function addTask($task): self
+    {
+        $validated = $this->validateInput($task);
+
+        foreach ($validated as $task) {
+            $this->processTask($task);
+        }
+
+        return $this;
+    }
+
+    /**
      * add multiple new tasks
      *
-     * @param array $tasks
+     * @param array $array
      */
-    public function addMultiple(array $tasks)
+    public function addMultipleTasks(array $array): self
     {
-        foreach ($tasks as $task) {
-            $this->addTask($task);
+        foreach ($array as $item) {
+            $this->addTask($item);
         }
+
+        return $this;
     }
 
     /**
@@ -168,8 +286,11 @@ class TodoList implements \Serializable
      */
     public function addDone($task)
     {
-        $task = $this->addTask($task);
-        $this->doTask($task->getId());
+        $tasks = $this->validateInput($task);
+        $task = $tasks[0]->complete();
+        $task = $this->processTask($task);
+
+        return $this;
     }
 
     /**
@@ -180,47 +301,59 @@ class TodoList implements \Serializable
      */
     public function addPriority($task, string $priority)
     {
-        $task = $this->addTask($task);
+        $task = $this->validateInput($task);
+        $task = $this->processTask($task[0]);
         $task->setPriority($priority);
+
+        return $this;
     }
 
     /**
-     * add project from the task to the $projects list
+     * add project from the task to the $projects Collection
      *
      * @param Task $task
      */
     protected function addProject(Task $task)
     {
-        if (!empty($task->projects->list)) {
-            foreach ($task->projects->list as $project) {
+        if (!$task->projects->isEmpty()) {
+            foreach ($task->projects as $project) {
+
+                // check for duplication
+
                 $this->projects->add($project);
             }
         }
     }
 
     /**
-     * add project from the task to the $projects list
+     * add context from the task to the $contexts Collection
      *
      * @param Task $task
      */
     protected function addContext(Task $task)
     {
-        if (!empty($task->contexts->list)) {
-            foreach ($task->contexts->list as $context) {
+        if (!$task->contexts->isEmpty()) {
+            foreach ($task->contexts as $context) {
+
+                // check for duplication
+
                 $this->contexts->add($context);
             }
         }
     }
 
     /**
-     * add metadata from the task to the $metadatas list
+     * add metadata from the task to the $metadata Collection
      +
      * @param Task $task
      */
     protected function addMetadata(Task $task)
     {
-        if (!empty($task->metadata->list)) {
-            foreach ($task->metadata->list as $meta) {
+        if (!$task->metadata->isEmpty()) {
+            foreach ($task->metadata as $meta) {
+
+                // check for duplication
+
                 $this->metadata->add($meta);
             }
         }
@@ -234,7 +367,7 @@ class TodoList implements \Serializable
      */
     public function getTask(string $id)
     {
-        foreach ($this->tasks->list as $task) {
+        foreach ($this->tasks as $task) {
             if ($task->getId() === $id) {
                 return $task;
             }
@@ -246,9 +379,9 @@ class TodoList implements \Serializable
     /**
      * get all tasks
      *
-     * @return ItemList $tasks
+     * @return Collection $tasks
      */
-    public function getTasks(): ItemList
+    public function getTasks(): Collection
     {
         return $this->tasks;
     }
@@ -258,23 +391,27 @@ class TodoList implements \Serializable
      *
      * @param string $id
      */
-    public function doTask(string $id)
+    public function doTask(string $id): self
     {
         // check if task exists
         $task = $this->getTask($id);
         $task->complete();
         $this->removeTaskFromTodo($task->getId());
         $this->done->add($task);
+
+        return $this;
     }
 
     /**
      * do all tasks
      */
-    public function doAll()
+    public function doAll(): self
     {
-        foreach ($this->todo->list as $task) {
+        foreach ($this->todo as $task) {
             $this->doTask($task->getId());
         }
+
+        return $this;
     }
 
     /**
@@ -282,23 +419,27 @@ class TodoList implements \Serializable
      *
      * @param string $id
      */
-    public function undoTask(string $id)
+    public function undoTask(string $id): self
     {
         // check if task exists
         $task = $this->getTask($id);
         $task->uncomplete();
         $this->removeTaskFromDone($task->getId());
         $this->todo->add($task);
+
+        return $this;
     }
 
     /**
      * undo all $done tasks
      */
-    public function undoAll()
+    public function undoAll(): self
     {
-        foreach ($this->done->list as $task) {
+        foreach ($this->done as $task) {
             $this->undoTask($task->getId());
         }
+
+        return $this;
     }
 
     /**
@@ -341,19 +482,19 @@ class TodoList implements \Serializable
         $doneMetadata = [];
 
         // collect used projects, contxts and metadata from $done tasks
-        foreach ($this->done->list as $done) {
-            foreach ($done->projects->list as $project) {
+        foreach ($this->done as $done) {
+            foreach ($done->projects as $project) {
                 $doneProjects[] = $project;
             }
-            foreach ($done->contexts->list as $context) {
+            foreach ($done->contexts as $context) {
                 $doneProjects[] = $context;
             }
-            foreach ($done->metadata->list as $metadata) {
+            foreach ($done->metadata as $metadata) {
                 $doneProjects[] = $metadata;
             }
         }
 
-        foreach ($this->done->list as $done) {
+        foreach ($this->done as $done) {
             $this->deleteTask($done->getId());
         }
 
@@ -375,7 +516,7 @@ class TodoList implements \Serializable
      */
     protected function removeTaskFromTodo(string $id)
     {
-        foreach ($this->todo->list as $key => $todo) {
+        foreach ($this->todo as $key => $todo) {
             if ($todo->getId() === $id) {
                 $this->todo->delete($key);
             }
@@ -389,20 +530,19 @@ class TodoList implements \Serializable
      */
     protected function removeTaskFromDone(string $id)
     {
-        foreach ($this->done->list as $key => $done) {
+        foreach ($this->done as $key => $done) {
             if ($done->getId() === $id) {
                 $this->done->delete($key);
             }
         }
-        $this->done->list = array_values($this->done->list);
     }
 
     /**
      * get only open tasks
      *
-     * @return ItemList $todo
+     * @return Collection $todo
      */
-    public function getTodo(): ItemList
+    public function getTodo(): Collection
     {
         return $this->todo;
     }
@@ -410,9 +550,9 @@ class TodoList implements \Serializable
     /**
      * get only done tasks
      *
-     * @return ItemList $done
+     * @return Collection $done
      */
-    public function getDone(): ItemList
+    public function getDone(): Collection
     {
         return $this->done;
     }
@@ -420,9 +560,9 @@ class TodoList implements \Serializable
     /**
      * get only the projects
      *
-     * @return ItemList $projects
+     * @return Collection $projects
      */
-    public function getProjects(): ItemList
+    public function getProjects(): Collection
     {
         return $this->projects;
     }
@@ -430,9 +570,9 @@ class TodoList implements \Serializable
     /**
      * get only the contexts
      *
-     * @return ItemList $contexts
+     * @return Collection $contexts
      */
-    public function getContexts(): ItemList
+    public function getContexts(): Collection
     {
         return $this->contexts;
     }
@@ -440,9 +580,9 @@ class TodoList implements \Serializable
     /**
      * get only the metadata
      *
-     * @return ItemList $metadata
+     * @return Collection $metadata
      */
-    public function getMetadata(): ItemList
+    public function getMetadata(): Collection
     {
         return $this->metadata;
     }
@@ -521,33 +661,4 @@ class TodoList implements \Serializable
         return trim($string);
     }
 
-    // implement \Serializable Interface
-    /**
-     * @return string
-     */
-    public function serialize()
-    {
-        return serialize(
-            array(
-                'tasks' => $this->tasks,
-                'todo' => $this->todo,
-                'done' => $this->done,
-            )
-        );
-    }
-
-    /**
-     * unserialize data into properties
-     *
-     * @param array $data
-     * @return void
-     */
-    public function unserialize($data)
-    {
-        $data = unserialize($data);
-
-        $this->tasks = $data['tasks'];
-        $this->todo = $data['todo'];
-        $this->done = $data['done'];
-    }
 }

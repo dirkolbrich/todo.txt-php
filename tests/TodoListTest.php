@@ -11,39 +11,181 @@ use PHPUnit\Framework\TestCase;
 class TodoListTest extends TestCase
 {
     /**
+     * Test TodoList instantiation
+     */
+    public function testInstantiation()
+    {
+        $list = new TodoList();
+
+        $this->assertInstanceOf("TodoTxt\TodoList", $list);
+        $this->assertEquals(0, $list->getTasks()->count());
+
+    }
+
+    /**
+     * Test static TodoList instantiation
+     */
+    public function testStatic()
+    {
+        $list = TodoList::make();
+
+        $this->assertInstanceOf("TodoTxt\TodoList", $list);
+    }
+
+    /**
+     * Test static TodoList instantiation
+     */
+    public function testStaticWithString()
+    {
+        $list = TodoList::withString('test');
+        $this->assertInstanceOf("TodoTxt\TodoList", $list);
+    }
+
+    /**
+     * Test static TodoList instantiation
+     */
+    public function testStaticWithArray()
+    {
+        $array = array('test', 'another test');
+        $list = TodoList::withArray($array);
+        $this->assertInstanceOf("TodoTxt\TodoList", $list);
+    }
+
+    /**
+     * Test static TodoList instantiation with class
+     */
+    public function testStaticWithTask()
+    {
+        $task = new Task('test');
+        $list = TodoList::withTask($task);
+        $this->assertInstanceOf("TodoTxt\TodoList", $list);
+    }
+
+    /**
      * Test Todolist instantiation single string input
      */
-    public function testStandardString()
+    public function testStandardWithString()
     {
         $task = "This is a task";
-        $todolist = new TodoList($task);
-
-        $this->assertEquals(1, $todolist->getTasks()->count());
+        $list = new TodoList($task);
+        $this->assertEquals(1, $list->getTasks()->count());
     }
 
     /**
      * Test Todolist instantiation with new line separated string input
      */
-    public function testStandardNewLineString()
+    public function testStandardWithNewLineString()
     {
-        $taskline = "This is a task\nThis is another task\nThis is a third task";
-        $todolist = new TodoList($taskline);
+        $string = "This is a task\nThis is another task\nThis is a third task";
+        $list = new TodoList($string);
 
-        $this->assertEquals(3, $todolist->getTasks()->count());
+        $this->assertEquals(3, $list->getTasks()->count());
     }
 
     /**
      * Test Todolist instantiation with array input
      */
-    public function testStandardArray()
+    public function testStandardWithArray()
     {
         $tasks = array(
             "This is a task",
             "This is another task");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(2, $todolist->getTasks());
+        $this->assertCount(2, $list->getTasks());
     }
+
+    /**
+     * Test Todolist instantiation with array input
+     */
+    public function testStandardWithClass()
+    {
+        $task = new Task('This is a task');
+        $list = new TodoList($task);
+
+        $this->assertCount(1, $list->getTasks());
+    }
+
+    /**
+     * Test adding a simple tasks
+     */
+    public function testAddTaskWithString()
+    {
+        $list = new TodoList();
+        $list->addTask("This is a task");
+
+        $this->assertCount(1, $list->getTasks());
+        $this->assertInstanceOf("TodoTxt\Task", $list->getTasks()[0]);
+    }
+
+    /**
+     * Test adding a simple tasks
+     */
+    public function testAddTaskWithNewLineString()
+    {
+        $string = "This is a task\nThis is another task\nThis is a third task";
+        $list = new TodoList();
+        $list->addTask($string);
+
+        $this->assertCount(3, $list->getTasks());
+        $this->assertInstanceOf("TodoTxt\Task", $list->getTasks()[0]);
+    }
+
+    /**
+     * Test adding a simple tasks
+     */
+    public function testAddTaskWithClass()
+    {
+        $task = new Task('test');
+
+        // $task = new Task("This is a task");
+        $list = new TodoList();
+        $list->addTask($task);
+
+        $this->assertEquals(1, $list->getTasks()->count());
+        $this->assertInstanceOf("TodoTxt\Task", $list->getTasks()[0]);
+    }
+
+
+    /**
+     * Test adding multiple mixed tasks
+     */
+    public function testAddMultipleTasksMixed()
+    {
+        $task = new Task('test');
+
+        $list = new TodoList();
+        $list->addMultipleTasks(array($task, 'Another task'));
+
+        $this->assertCount(2, $list->getTasks());
+    }
+
+    /**
+     * Test adding and completing a task
+     */
+    public function testAddDone()
+    {
+        $list = new TodoList();
+        $list->addDone("This is a task");
+
+        $this->assertCount(1, $list->getTasks());
+        $this->assertCount(1, $list->getDone());
+        $this->assertTrue($list->getTasks()->first()->isComplete());
+    }
+
+    /**
+     * Test adding a task and setting priority
+     */
+    public function testAddPriority()
+    {
+        $list = new TodoList();
+        $list->addPriority("This is a task", 'A');
+
+        $this->assertCount(1, $list->getTasks());
+        $this->assertTrue($list->getTasks()->first()->hasPriority());
+        $this->assertEquals('A', $list->getTasks()->first()->getPriority());
+    }
+
 
     /**
      * Test Todolist with multiple different projects
@@ -53,9 +195,9 @@ class TodoListTest extends TestCase
         $tasks = array(
             "This is a task with a +project",
             "This is another task with +anotherproject");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(2, $todolist->getProjects());
+        $this->assertCount(2, $list->getProjects());
     }
 
     /**
@@ -66,9 +208,9 @@ class TodoListTest extends TestCase
         $tasks = array(
             "This is a task with a +project",
             "This is another task with an identical +project");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(1, $todolist->getProjects());
+        $this->assertCount(1, $list->getProjects());
     }
 
     /**
@@ -79,9 +221,9 @@ class TodoListTest extends TestCase
         $tasks = array(
             "This is a task with a @context",
             "This is another task with @anothercontext");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(2, $todolist->getContexts());
+        $this->assertCount(2, $list->getContexts());
     }
 
     /**
@@ -92,9 +234,9 @@ class TodoListTest extends TestCase
         $tasks = array(
             "This is a task with a +context",
             "This is another task with an identical +context");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(1, $todolist->getContexts());
+        $this->assertCount(1, $list->getContexts());
     }
 
     /**
@@ -105,9 +247,9 @@ class TodoListTest extends TestCase
         $tasks = array(
             "This is a task with a meta:data",
             "This is another task with another:meta");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(2, $todolist->getMetadata());
+        $this->assertCount(2, $list->getMetadata());
     }
 
     /**
@@ -118,76 +260,9 @@ class TodoListTest extends TestCase
         $tasks = array(
             "This is a task with a meta:data",
             "This is another task with an identical meta:data");
-        $todolist = new TodoList($tasks);
+        $list = new TodoList($tasks);
 
-        $this->assertCount(1, $todolist->getMetadata());
-    }
-
-    /**
-     * Test adding a simple tasks
-     */
-    public function testAddWithClass()
-    {
-        $taskMock = $this->createMock('TodoTxt\Task');
-
-        // $task = new Task("This is a task");
-        $todolist = new TodoList();
-        $todolist->addTask($taskMock);
-
-        $this->assertEquals(1, $todolist->getTasks()->count());
-        $this->assertInstanceOf("TodoTxt\Task", $todolist->getTasks()[0]);
-    }
-
-    /**
-     * Test adding a simple tasks
-     */
-    public function testAddWithString()
-    {
-        $todolist = new TodoList();
-        $todolist->addTask("This is a task");
-
-        $this->assertCount(1, $todolist->getTasks());
-        $this->assertInstanceOf("TodoTxt\Task", $todolist->getTasks()[0]);
-    }
-
-    /**
-     * Test adding multiple mixed tasks
-     */
-    public function testAddMultipleMixed()
-    {
-        // mock Task class
-        $taskMock = $this->createMock('TodoTxt\Task');
-
-        $todolist = new TodoList();
-        $todolist->addMultiple(array($taskMock, 'Another task'));
-
-        $this->assertCount(2, $todolist->getTasks());
-    }
-
-    /**
-     * Test adding and completing a task
-     */
-    public function testAddDone()
-    {
-        $todolist = new TodoList();
-        $todolist->addDone("This is a task");
-
-        $this->assertCount(1, $todolist->getTasks());
-        $this->assertCount(1, $todolist->getDone());
-        $this->assertTrue($todolist->getTasks()->first()->isComplete());
-    }
-
-    /**
-     * Test adding a task and setting priority
-     */
-    public function testAddPriority()
-    {
-        $todolist = new TodoList();
-        $todolist->addPriority("This is a task", 'A');
-
-        $this->assertCount(1, $todolist->getTasks());
-        $this->assertTrue($todolist->getTasks()->first()->hasPriority());
-        $this->assertEquals('A', $todolist->getTasks()->first()->getPriority());
+        $this->assertCount(1, $list->getMetadata());
     }
 
     /**
@@ -195,13 +270,13 @@ class TodoListTest extends TestCase
      */
     public function testDoTask()
     {
-        $todolist = new TodoList("This is a task");
-        $todolist->doTask($todolist->getTasks()->first()->getId());
+        $list = new TodoList("This is a task");
+        $list->doTask($list->getTasks()->first()->getId());
 
-        $this->assertCount(1, $todolist->getTasks());
-        $this->assertCount(0, $todolist->getTodo());
-        $this->assertCount(1, $todolist->getDone());
-        $this->assertTrue($todolist->getTasks()->first()->isComplete());
+        $this->assertCount(1, $list->getTasks());
+        $this->assertCount(0, $list->getTodo());
+        $this->assertCount(1, $list->getDone());
+        $this->assertTrue($list->getTasks()->first()->isComplete());
     }
 
     /**
@@ -215,14 +290,14 @@ class TodoListTest extends TestCase
             "This is a third task"
             );
 
-        $todolist = new TodoList($tasks);
-        $todolist->doAll();
+        $list = new TodoList($tasks);
+        $list->doAll();
 
-        $this->assertCount(3, $todolist->getTasks());
-        $this->assertCount(0, $todolist->getTodo());
-        $this->assertCount(3, $todolist->getDone());
-        $this->assertTrue($todolist->getTasks()->first()->isComplete());
-        $this->assertTrue($todolist->getTasks()->last()->isComplete());
+        $this->assertCount(3, $list->getTasks());
+        $this->assertCount(0, $list->getTodo());
+        $this->assertCount(3, $list->getDone());
+        $this->assertTrue($list->getTasks()->first()->isComplete());
+        $this->assertTrue($list->getTasks()->last()->isComplete());
     }
 
     /**
@@ -230,12 +305,12 @@ class TodoListTest extends TestCase
      */
     public function testUndoTask()
     {
-        $todolist = new TodoList("x 2017-03-23 This is a completed task");
-        $todolist->undoTask($todolist->getDone()->first()->getId());
+        $list = new TodoList("x 2017-03-23 This is a completed task");
+        $list->undoTask($list->getDone()->first()->getId());
 
-        $this->assertFalse($todolist->getTasks()->first()->isComplete());
-        $this->assertCount(1, $todolist->getTodo());
-        $this->assertCount(0, $todolist->getDone());
+        $this->assertFalse($list->getTasks()->first()->isComplete());
+        $this->assertCount(1, $list->getTodo());
+        $this->assertCount(0, $list->getDone());
     }
 
     /**
@@ -249,10 +324,10 @@ class TodoListTest extends TestCase
             "This is a third task"
             );
 
-        $todolist = new TodoList($tasks);
-        $todolist->deleteTask($todolist->getTasks()->first()->getId());
+        $list = new TodoList($tasks);
+        $list->deleteTask($list->getTasks()->first()->getId());
 
-        $this->assertCount(2, $todolist->getTasks());
+        $this->assertCount(2, $list->getTasks());
     }
 
     /**
@@ -269,20 +344,20 @@ class TodoListTest extends TestCase
             "This is a fifth task with a meta:data"
             );
 
-        $todolist = new TodoList($tasks);
-        // var_dump($todolist->getProjects());
-        // var_dump($todolist->getContexts());
-        // var_dump($todolist->getMetadata());
-        $todolist = $todolist->archive();
-        // var_dump($todolist->getProjects());
-        // var_dump($todolist->getContexts());
-        // var_dump($todolist->getMetadata());
+        $list = new TodoList($tasks);
+        // var_dump($list->getProjects());
+        // var_dump($list->getContexts());
+        // var_dump($list->getMetadata());
+        $list = $list->archive();
+        // var_dump($list->getProjects());
+        // var_dump($list->getContexts());
+        // var_dump($list->getMetadata());
 
-        $this->assertCount(5, $todolist->getTasks());
-        $this->assertCount(5, $todolist->getTodo());
-        $this->assertCount(0, $todolist->getDone());
-        $this->assertCount(1, $todolist->getProjects());
-        $this->assertCount(1, $todolist->getContexts());
-        $this->assertCount(1, $todolist->getMetadata());
+        $this->assertCount(5, $list->getTasks());
+        $this->assertCount(5, $list->getTodo());
+        $this->assertCount(0, $list->getDone());
+        $this->assertCount(1, $list->getProjects());
+        $this->assertCount(1, $list->getContexts());
+        $this->assertCount(1, $list->getMetadata());
     }
 }
