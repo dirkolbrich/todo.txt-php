@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace TodoTxt;
 
+use Countable;
 use ArrayAccess;
 use ArrayIterator;
-use Countable;
 use IteratorAggregate;
 
 /**
@@ -36,10 +36,7 @@ class Collection implements Countable, ArrayAccess, IteratorAggregate
      */
     public static function make(array $array = null): self
     {
-        $collection = new Collection();
-        $collection->items = ($array == null) ? null : $array;
-
-        return $collection;
+        return new static($array);
     }
 
     /**
