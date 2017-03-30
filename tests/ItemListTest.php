@@ -15,9 +15,48 @@ class ItemListTest extends TestCase
     public function testInstantiation()
     {
         $list = new ItemList();
+
         $this->assertInstanceOf("TodoTxt\ItemList", $list);
         $this->assertEquals(0, $list->count());
-        $this->assertEmpty($list->list);
+        $this->assertEmpty($list->getList());
+    }
+
+    /**
+     * Test ItemList instantiation with array
+     */
+    public function testInstantiationWithArray()
+    {
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+
+        $this->assertInstanceOf("TodoTxt\ItemList", $list);
+        $this->assertEquals(3, $list->count());
+        $this->assertNotEmpty($list->getList());
+    }
+
+    /**
+     * Test ItemList instantiation with static
+     */
+    public function testInstantiationStatic()
+    {
+        $list = ItemList::make();
+
+        $this->assertInstanceOf("TodoTxt\ItemList", $list);
+        $this->assertEquals(0, $list->count());
+        $this->assertEmpty($list->getList());
+    }
+
+    /**
+     * Test static ItemList instantiation with array
+     */
+    public function testStaticInstantiationWithArray()
+    {
+        $array = array('one', 'two', 'three');
+        $list = ItemList::make($array);
+
+        $this->assertInstanceOf("TodoTxt\ItemList", $list);
+        $this->assertEquals(3, $list->count());
+        $this->assertNotEmpty($list->getList());
     }
 
     /**
@@ -27,8 +66,9 @@ class ItemListTest extends TestCase
     {
         $list = new ItemList();
         $list->add('item1');
+
         $this->assertEquals(1, $list->count());
-        $this->assertNotEmpty($list->list);
+        $this->assertNotEmpty($list->getList());
     }
 
     /**
@@ -39,8 +79,9 @@ class ItemListTest extends TestCase
         $list = new ItemList();
         $list->add('item1');
         $list->delete(0);
+
         $this->assertEquals(0, $list->count());
-        $this->assertEmpty($list->list);
+        $this->assertEmpty($list->getList());
     }
 
     /**
@@ -48,16 +89,14 @@ class ItemListTest extends TestCase
      */
     public function testDeleteIndex()
     {
-        $list = new ItemList();
-        $list->add('item1');
-        $list->add('item2');
-        $list->add('item3');
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
         $list->delete(1);
-        $this->assertEquals(2, $list->count());
-        $this->assertArrayHasKey(1, $list->list);
-        $this->assertArrayNotHasKey(2, $list->list);
-    }
 
+        $this->assertEquals(2, $list->count());
+        $this->assertArrayHasKey(1, $list->getList());
+        $this->assertArrayNotHasKey(2, $list->getList());
+    }
 
     /**
      * Test deleting not existing item from ItemList
@@ -67,8 +106,72 @@ class ItemListTest extends TestCase
         $list = new ItemList();
         $list->add('item1');
         $list->delete(1);
+
         $this->assertEquals(1, $list->count());
-        $this->assertNotEmpty($list->list);
+        $this->assertNotEmpty($list->getList());
+    }
+
+    /**
+     * Test map function
+     */
+    public function testMap()
+    {
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+
+        $list = $list->map(function ($item) {
+            return $item . '-test';
+        });
+
+        $this->assertEquals(3, count($list));
+        $this->assertEquals('one-test', $list->first());
+    }
+
+    /**
+     * Test filter function
+     */
+    public function testFilter()
+    {
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+
+        $list = $list->filter(function ($item) {
+            return $item == 'two';
+        });
+
+        $this->assertEquals(1, count($list));
+        $this->assertEquals('two', $list[0]);
+    }
+
+    /**
+     * Test reject function
+     */
+    public function testReject()
+    {
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+
+        $list = $list->reject(function ($item) {
+            return $item == 'two';
+        });
+
+        $this->assertEquals(2, count($list));
+        $this->assertEquals('one', $list[0]);
+        $this->assertEquals('three', $list[1]);
+    }
+
+    /**
+     * Test reversing function
+     */
+    public function testReverse()
+    {
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+        $list = $list->reverse();
+
+        $this->assertEquals(3, count($list));
+        $this->assertEquals('three', $list->first());
+        $this->assertEquals('one', $list->last());
     }
 
     /**
@@ -76,11 +179,10 @@ class ItemListTest extends TestCase
      */
     public function testFirst()
     {
-        $list = new ItemList();
-        $list->add('item1');
-        $list->add('item2');
-        $list->add('item3');
-        $this->assertEquals('item1', $list->first());
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+
+        $this->assertEquals('one', $list->first());
     }
 
     /**
@@ -88,10 +190,9 @@ class ItemListTest extends TestCase
      */
     public function testLast()
     {
-        $list = new ItemList();
-        $list->add('item1');
-        $list->add('item2');
-        $list->add('item3');
-        $this->assertEquals('item3', $list->last());
+        $array = array('one', 'two', 'three');
+        $list = new ItemList($array);
+
+        $this->assertEquals('three', $list->last());
     }
 }
