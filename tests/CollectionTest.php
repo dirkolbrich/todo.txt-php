@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 class CollectionTest extends TestCase
 {
     /**
-     * Test ItemList instantiation
+     * Test Collection instantiation
      */
     public function testInstantiation()
     {
@@ -22,7 +22,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test ItemList instantiation with array
+     * Test Collection instantiation with array
      */
     public function testInstantiationWithArray()
     {
@@ -35,7 +35,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test ItemList instantiation with static
+     * Test Collection instantiation with static
      */
     public function testInstantiationStatic()
     {
@@ -47,7 +47,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test static ItemList instantiation with array
+     * Test static Collection instantiation with array
      */
     public function testStaticInstantiationWithArray()
     {
@@ -60,7 +60,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test adding item to ItemList
+     * Test adding item to Collection
      */
     public function testAdd()
     {
@@ -72,7 +72,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test deleting item from ItemList
+     * Test deleting item from Collection
      */
     public function testDelete()
     {
@@ -85,7 +85,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test deleting item from ItemList with reorder of index
+     * Test deleting item from Collection with reorder of index
      */
     public function testDeleteIndex()
     {
@@ -99,7 +99,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test deleting not existing item from ItemList
+     * Test deleting not existing item from Collection
      */
     public function testInvalidDelete()
     {
@@ -175,7 +175,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test get first item from ItemList
+     * Test get first item from Collection
      */
     public function testFirst()
     {
@@ -186,7 +186,7 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * Test get last item from ItemList
+     * Test get last item from Collection
      */
     public function testLast()
     {
