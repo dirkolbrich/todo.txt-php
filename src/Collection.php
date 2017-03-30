@@ -11,12 +11,12 @@ use IteratorAggregate;
 /**
  * Encapsulates an array of items
  */
-class ItemList implements Countable, ArrayAccess, IteratorAggregate
+class Collection implements Countable, ArrayAccess, IteratorAggregate
 {
     /**
      * @var array
      */
-    protected $list;
+    protected $items;
 
     /**
      * constructor with optional parameter
@@ -25,7 +25,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function __construct(array $array = null)
     {
-        ($array == null) ? : $this->list = $array ;
+        ($array == null) ? : $this->items = $array ;
     }
 
     /**
@@ -36,20 +36,20 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public static function make(array $array = null): self
     {
-        $list = new ItemList();
-        $list->list = ($array == null) ? null : $array;
+        $collection = new Collection();
+        $collection->items = ($array == null) ? null : $array;
 
-        return $list;
+        return $collection;
     }
 
     /**
-     * get $list as array
+     * get $items as array
      *
      * @return array|null
      */
-    public function getList()
+    public function get()
     {
-        return $this->list;
+        return $this->items;
     }
 
     /**
@@ -59,7 +59,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function isEmpty()
     {
-        return empty($this->list);
+        return empty($this->items);
     }
 
     /**
@@ -70,7 +70,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function add($item): self
     {
-        $this->list[] = $item;
+        $this->items[] = $item;
         return $this;
     }
 
@@ -82,7 +82,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function prepend($item): self
     {
-        $this->list = array_unshift($this->list, $item);
+        $this->items = array_unshift($this->items, $item);
         return $this;
     }
 
@@ -98,15 +98,15 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
     }
 
     /**
-     * delete an item from the $list
+     * delete an item from collection
      *
      * @param  int  $position
      */
     public function delete(int $position)
     {
         if ($this->offsetExists($position)) {
-            unset($this->list[$position]);
-            $this->list = array_values($this->list);
+            unset($this->items[$position]);
+            $this->items = array_values($this->items);
             return true;
         }
         return false;
@@ -119,7 +119,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function shift()
     {
-        return array_shift($this->list);
+        return array_shift($this->items);
     }
 
     /**
@@ -129,7 +129,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function pop()
     {
-        return array_pop($this->list);
+        return array_pop($this->items);
     }
 
     /**
@@ -140,7 +140,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function map(callable $callback): self
     {
-        return new static(array_map($callback, $this->list));
+        return new static(array_map($callback, $this->items));
     }
 
     /**
@@ -151,7 +151,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function filter(callable $callback): self
     {
-        return new static(array_values(array_filter($this->list, $callback)));
+        return new static(array_values(array_filter($this->items, $callback)));
     }
 
     /**
@@ -162,7 +162,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function each(callable $callback)
     {
-        foreach ($this->list as $item) {
+        foreach ($this->items as $item) {
             $callback($item);
         }
     }
@@ -176,13 +176,13 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
     public function reject(callable $callback): self
     {
         $result = [];
-        foreach ($this->list as $item) {
+        foreach ($this->items as $item) {
             if (!$callback($item)) {
                 $result[] = $item;
             }
         }
 
-        $this->list = $result;
+        $this->items = $result;
         return $this;
     }
 
@@ -193,7 +193,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      **/
     public function first()
     {
-        return $this->list[0];
+        return $this->items[0];
     }
 
     /**
@@ -203,7 +203,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      **/
     public function last()
     {
-        return $this->list[$this->count() - 1];
+        return $this->items[$this->count() - 1];
     }
 
 
@@ -214,18 +214,18 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function reverse(): self
     {
-        return new static(array_reverse($this->list, false));
+        return new static(array_reverse($this->items, false));
     }
 
     /**
-     * find the position of an item within list
+     * find the position of an item within the collection
      *
      * @param   string   $aid
      * @return  int|null
     */
     public function findPositionById(string $id)
     {
-        foreach ($this->list as $key => $item) {
+        foreach ($this->items as $key => $item) {
             if ($item->getId() == $id) {
                 return $key;
             }
@@ -236,13 +236,13 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
 
     // implement \Countable Interface
     /**
-     * count the content of $list
+     * count the content of $items
      *
      * @return int
      */
     public function count(): int
     {
-        return count($this->list);
+        return count($this->items);
     }
 
     // implement \IteratorAggregate Interface
@@ -253,7 +253,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function getIterator(): ArrayIterator
     {
-        return new ArrayIterator($this->list);
+        return new ArrayIterator($this->items);
     }
 
     // implement \ArrayAccess Interface
@@ -265,7 +265,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function offsetExists($offset): bool
     {
-        return isset($this->list[$offset]);
+        return isset($this->items[$offset]);
     }
 
     /**
@@ -274,7 +274,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function offsetGet($offset)
     {
-        return isset($this->list[$offset]) ? $this->list[$offset] : null;
+        return isset($this->items[$offset]) ? $this->items[$offset] : null;
     }
 
     /**
@@ -283,7 +283,7 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function offsetSet($offset, $value)
     {
-        $this->list[$offset] = $value;
+        $this->items[$offset] = $value;
     }
 
     /**
@@ -291,6 +291,6 @@ class ItemList implements Countable, ArrayAccess, IteratorAggregate
      */
     public function offsetUnset($offset)
     {
-        unset($this->list[$offset]);
+        unset($this->items[$offset]);
     }
 }
