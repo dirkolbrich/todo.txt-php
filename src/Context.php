@@ -11,13 +11,6 @@ use TodoTxt\Exceptions\EmptyStringException;
 class Context
 {
     /**
-     * The md5 hash of the raw utf-8 encoded string
-     *
-     * @var string
-     */
-    protected $id = '';
-
-    /**
      * @var string
      */
     public $name = '';
@@ -31,7 +24,6 @@ class Context
     {
         if (!is_null($string)) {
             $string = $this->validateString($string);
-            $this->id = $this->createId($string);
             $this->name = $string;
         }
     }
@@ -47,20 +39,9 @@ class Context
         $context = new Context();
 
         $string = $context->validateString($string);
-        $context->id = $context->createId($string);
         $context->name = $string;
 
         return $context;
-    }
-
-    /**
-     * get $id of this context
-     *
-     * @return string
-     */
-    public function getId(): string
-    {
-        return $this->id;
     }
 
     /**
@@ -81,19 +62,7 @@ class Context
     public function setName(string $string)
     {
         $string = $this->validateString($string);
-        $this->id = $this->createId($string);
         $this->name = $string;
-    }
-
-    /**
-     * create the $id of the project, a md5 hash based on the utf-8 encoded raw string
-     *
-     * @param string $string
-     * @return string
-     */
-    protected function createId(string $string): string
-    {
-        return md5(utf8_encode($string));
     }
 
     /**

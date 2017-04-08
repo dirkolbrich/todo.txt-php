@@ -19,7 +19,6 @@ class ProjectTest extends TestCase
 
         $this->assertInstanceOf("TodoTxt\Project", $project);
         $this->assertEmpty($project->getName());
-        $this->assertEmpty($project->getId());
     }
 
     /**
@@ -30,7 +29,6 @@ class ProjectTest extends TestCase
         $project = new Project('test');
 
         $this->assertEquals('test', $project->getName());
-        $this->assertEquals(md5(utf8_encode('test')), $project->getId());
     }
 
     /**
@@ -63,7 +61,6 @@ class ProjectTest extends TestCase
         $project->setName('test');
 
         $this->assertEquals('test', $project->getName());
-        $this->assertEquals(md5(utf8_encode('test')), $project->getId());
     }
 
     /**

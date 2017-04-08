@@ -13,13 +13,6 @@ use TodoTxt\Exceptions\InvalidArrayException;
 class MetaData
 {
     /**
-     * The md5 hash of the raw utf-8 encoded string
-     *
-     * @var string
-     */
-    protected $id = '';
-
-    /**
      * @var string
      */
     protected $key = '';
@@ -40,7 +33,6 @@ class MetaData
         if (!is_null($array)) {
             $array = $this->validateArray($array);
 
-            $this->id = $this->createId($array['full']);
             $this->key = $array['key'];
             $this->value = $array['value'];
         }
@@ -57,21 +49,10 @@ class MetaData
         $metadata = new MetaData();
 
         $array = $metadata->validateArray($array);
-        $metadata->id = $metadata->createId($array['full']);
         $metadata->key = $array['key'];
         $metadata->value = $array['value'];
 
         return $metadata;
-    }
-
-   /**
-     * get $id of this metadata
-     *
-     * @return string
-     */
-    public function getId(): string
-    {
-        return $this->id;
     }
 
    /**
@@ -84,7 +65,6 @@ class MetaData
     {
         $string = $this->validateString($string);
         $this->key = $string;
-        $this->id = $this->createId($string . ':' . $this->value);
 
         return $this;
     }
@@ -109,7 +89,6 @@ class MetaData
     {
         $string = $this->validateString($string);
         $this->value = $string;
-        $this->id = $this->createId($this->key . ':' . $string);
 
         return $this;
     }
@@ -125,21 +104,10 @@ class MetaData
     }
 
     /**
-     * create the $id of the metadata, a md5 hash based on the utf-8 encoded raw string
-     *
-     * @param string $string
-     * @return string
-     */
-    protected function createId(string $string): string
-    {
-        return md5(utf8_encode($string));
-    }
-
-    /**
      * validate the metadata array
      * array should be formed
      * array[
-     *      'full' => full represntation of the metadata 'key:value',
+     *      'full' => full representation of the metadata 'key:value',
      *      'key' => key of the metadata pair,
      *      'value' => value of the metadata pair,
      * ]

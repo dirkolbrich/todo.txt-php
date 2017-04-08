@@ -20,7 +20,6 @@ class MetaDataTest extends TestCase
         $this->assertInstanceOf("TodoTxt\MetaData", $metadata);
         $this->assertEmpty($metadata->getKey());
         $this->assertEmpty($metadata->getValue());
-        $this->assertEmpty($metadata->getId());
     }
 
     /**
@@ -32,7 +31,6 @@ class MetaDataTest extends TestCase
 
         $this->assertEquals('key', $metadata->getKey());
         $this->assertEquals('value', $metadata->getValue());
-        $this->assertEquals(md5(utf8_encode('key:value')), $metadata->getId());
     }
 
     /**
@@ -46,7 +44,6 @@ class MetaDataTest extends TestCase
         $this->assertInstanceOf("TodoTxt\MetaData", $metadata);
         $this->assertEquals('key', $metadata->getKey());
         $this->assertEquals('value', $metadata->getValue());
-        $this->assertEquals(md5(utf8_encode('key:value')), $metadata->getId());
     }
 
     public function testEmptyArray()
@@ -72,7 +69,6 @@ class MetaDataTest extends TestCase
 
         $this->assertEquals('test', $metadata->getKey());
         $this->assertEquals('value', $metadata->getValue());
-        $this->assertEquals($metadata->getId(), md5(utf8_encode('test:value')));
     }
 
     public function testSetEmptyKey()
@@ -91,7 +87,6 @@ class MetaDataTest extends TestCase
 
         $this->assertEquals('key', $metadata->getKey());
         $this->assertEquals('test', $metadata->getValue());
-        $this->assertEquals($metadata->getId(), md5(utf8_encode('key:test')));
     }
 
     public function testSetEmptyValue()

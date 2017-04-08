@@ -18,7 +18,6 @@ class ContextTest extends TestCase
 
         $this->assertInstanceOf("TodoTxt\Context", $context);
         $this->assertEmpty($context->getName());
-        $this->assertEmpty($context->getId());
     }
 
     /**
@@ -29,7 +28,6 @@ class ContextTest extends TestCase
         $context = new Context('test');
 
         $this->assertEquals('test', $context->getName());
-        $this->assertEquals(md5(utf8_encode('test')), $context->getId());
     }
 
     /**
@@ -58,7 +56,6 @@ class ContextTest extends TestCase
         $context->setName('test');
 
         $this->assertEquals('test', $context->getName());
-        $this->assertEquals(md5(utf8_encode('test')), $context->getId());
     }
 
     /**

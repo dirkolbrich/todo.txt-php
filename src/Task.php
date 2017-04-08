@@ -645,16 +645,16 @@ class Task
         $project = new Project($project);
 
         if (!$this->projects->isEmpty()) {
-            // validate if created project is already in list
+            // validate if created project is duplicate of list entry
             foreach ($this->projects as $item) {
-                if ($item->getId() == $project->getId()) {
+                if ($item->getName() == $project->getName()) {
                     return;
                 }
             }
 
             // using collection method - refactor!
             // $projects = $this->projects->filter(function($item) use ($project) {
-            //     $item->getId() == $project->getId();
+            //     $item->getName() == $project->getName();
             // });
             // var_dump($projects);
         }
@@ -673,12 +673,18 @@ class Task
         //create new context
         $context = new Context($context);
 
+        // validate context for duplicate in list
         if (!$this->contexts->isEmpty()) {
             foreach ($this->contexts as $item) {
-                if ($item->getId() == $context->getId()) {
+                if ($item->getName() == $context->getName()) {
                     return;
                  }
             }
+            // using collection method - refactor!
+            // $contexts = $this->contexts->filter(function($item) use ($context) {
+            //     $item->getName() == $context->getName();
+            // });
+            // var_dump($contexts);
         }
 
         $this->contexts->add($context);
@@ -699,10 +705,11 @@ class Task
         ];
         $metadata = new MetaData($match);
 
-        // validate metadata for duplicate
+        // validate metadata for duplicate in list
         if (!$this->metadata->isEmpty()) {
             foreach ($this->metadata as $item) {
-                if ($item->getId() == $metadata->getId()) {
+                if (($item->getKey() == $metadata->getKey()) &&
+                ($item->getValue() == $metadata->getValue())) {
                     return;
                  }
             }
